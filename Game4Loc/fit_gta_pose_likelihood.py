@@ -46,6 +46,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--artifact_path", required=True)
     parser.add_argument("--summary_path", required=True)
     parser.add_argument("--seed", type=int, default=20260903)
+    parser.add_argument(
+        "--model_type",
+        choices=("auto", "logistic", "hist_gradient_boosting"),
+        default="auto",
+        help=(
+            "Model family to fit. 'auto' preserves the pilot protocol: fit logistic first and optionally "
+            "run the single fixed HGB follow-up. Use an explicit family for confirmatory fits so the "
+            "evaluation cache cannot trigger model-family selection."
+        ),
+    )
     parser.add_argument("--allow_hgb_followup", action="store_true")
     return parser.parse_args()
 
@@ -481,6 +491,8 @@ def write_markdown(path: Path, summary: Mapping) -> None:
 
 def main() -> None:
     args = parse_args()
+    if args.model_type != "auto" and args.allow_hgb_followup:
+        raise ValueError("--allow_hgb_followup is valid only with --model_type auto")
     train_records = load_jsonl(args.train_cache)
     eval_records = load_jsonl(args.eval_cache)
 
@@ -499,7 +511,12 @@ def main() -> None:
     oracle_ma20_gain = float(oracle["MA@20_pct"]) - float(legacy["MA@20_pct"])
     oracle_pass = oracle_dis_gain >= HEADROOM_DIS_RELATIVE and oracle_ma20_gain >= HEADROOM_MA20_PP
 
-    payload, calibration_names = _logistic_payload(train_records, args.seed)
+    if args.model_type == "hist_gradient_boosting":
+        payload, calibration_names = _hgb_payload(train_records, args.seed)
+        initial_logistic = None
+    else:
+        payload, calibration_names = _logistic_payload(train_records, args.seed)
+        initial_logistic = {}
     calibrator = PoseLikelihoodCalibrator(payload)
     x_eval, y_eval = flatten(eval_records)
     probabilities = calibrator.predict_proba_matrix(x_eval)
@@ -510,9 +527,10 @@ def main() -> None:
         and metrics["ECE_15_equal_mass"] <= CALIBRATION_ECE
         and risk["relative_improvement"] >= RISK70_RELATIVE
     )
-    initial_logistic = {"metrics": metrics, "risk70": risk}
+    if payload["model_type"] == "logistic":
+        initial_logistic = {"metrics": metrics, "risk70": risk}
     followup_used = False
-    if oracle_pass and not calibration_pass and args.allow_hgb_followup:
+    if args.model_type == "auto" and oracle_pass and not calibration_pass and args.allow_hgb_followup:
         hgb_payload, calibration_names = _hgb_payload(train_records, args.seed)
         hgb_calibrator = PoseLikelihoodCalibrator(hgb_payload)
         hgb_probabilities = hgb_calibrator.predict_proba_matrix(x_eval)
@@ -537,13 +555,14 @@ def main() -> None:
     adaptive_eval = evaluate_adaptive(eval_records, calibrator)
 
     decision = "KEEP" if oracle_pass and calibration_pass else "REJECT"
-    if oracle_pass and not calibration_pass and not followup_used:
+    if args.model_type == "auto" and oracle_pass and not calibration_pass and not followup_used:
         decision = "NEEDS ONE FOLLOW-UP"
     summary = {
         "inputs": {"train_cache": str(Path(args.train_cache).resolve()), "eval_cache": str(Path(args.eval_cache).resolve())},
         "pilot": pilot,
         "headroom": {"Dis@1_relative_gain": oracle_dis_gain, "MA@20_pp_gain": oracle_ma20_gain},
         "calibration": {
+            "model_type_requested": args.model_type,
             "model_type": payload["model_type"],
             "metrics": metrics,
             "risk70": risk,

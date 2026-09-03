@@ -102,6 +102,22 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   --overwrite
 ```
 
+### Confirmatory model-family lock — smoke validation
+
+- Added `--model_type {auto,logistic,hist_gradient_boosting}` to the fitting
+  entry point.
+- `auto` preserves the original pilot protocol; an explicit family disables
+  evaluation-triggered family selection.
+- A 64-query smoke fit with
+  `--model_type hist_gradient_boosting` completed successfully:
+  - requested family: `hist_gradient_boosting`;
+  - fitted family: `hist_gradient_boosting`;
+  - logistic fit: not executed;
+  - HGB follow-up trigger: not used.
+- The smoke decision was `REJECT`, as expected for a pipeline-only 64-query
+  sample; it is not used as paper evidence.
+- Decision: `KEEP` (use the explicit HGB family for the final train-only fit).
+
 Warnings from deprecated AMP/albumentations argument spellings were observed;
 they are pre-existing environment/code warnings and have not stopped the run.
 
@@ -646,6 +662,11 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
 - The retrieval checkpoint, full-teacher Exp C VOP and matcher remain frozen.
 - After completion, fit the final calibrator only on this train cache; the full
   test cache will not participate in fitting or policy selection.
+- Final model family is fixed before the full-train fit to the single pilot
+  follow-up model, `hist_gradient_boosting`. The fitting CLI now requires this
+  explicit confirmatory choice via
+  `--model_type hist_gradient_boosting`; the test cache may report metrics but
+  cannot trigger or select a model family.
 - Output:
   - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.jsonl`
 - Exact command:

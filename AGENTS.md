@@ -110,6 +110,8 @@ As of this handoff:
 - Active next stage:
   - full 13,851-query same-area train cache at top-5×top-4
   - then refit the final calibrator using train only
+  - final family is pre-fixed to the pilot follow-up HGB via
+    `--model_type hist_gradient_boosting`; do not let test metrics select it
 - New research question:
   - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated
     abstention recover tile-boundary/top-1 failures without increasing
