@@ -758,3 +758,13 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
 - No configuration change, fitting or interim aggregate evaluation was
   performed. Final uniqueness/feature/fingerprint checks remain pending.
 - Decision: `KEEP` (continue unchanged; no user action required).
+
+### Full same-area train cache — 5,000-query milestone
+
+- At 2026-09-04 03:44 CST the cache contained 5,234/13,851 written rows.
+- The original durable process (`53993`) remains active/running. The resumed
+  log crossed 5,000 new queries at `8972.6s` and continued through 5,200.
+- Recent output shows normal progress without an exception. Configuration and
+  scientific protocol remain unchanged; fitting and final integrity checks
+  await completion of the cache.
+- Decision: `KEEP` (continue unchanged; no user action required).
