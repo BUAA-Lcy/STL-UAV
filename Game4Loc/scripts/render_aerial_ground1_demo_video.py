@@ -139,6 +139,17 @@ def parse_args() -> argparse.Namespace:
         help="Rendered target/localization crop size in pixels.",
     )
     parser.add_argument(
+        "--square_query_crop",
+        action="store_true",
+        default=True,
+        help="Center-crop the UAV frame to a square before demo matching and display.",
+    )
+    parser.add_argument(
+        "--disable_top1_center_prediction_fallback",
+        action="store_true",
+        help="Do not show the Top-1 tile center as the localized coordinate when visual projection is unavailable.",
+    )
+    parser.add_argument(
         "--skip_gif",
         action="store_true",
         help="Skip GIF export and only write MP4/card JPGs.",
@@ -287,6 +298,28 @@ def rotate_bgr_with_affine(image_bgr: np.ndarray, angle_deg: float) -> tuple[np.
         borderValue=0,
     )
     return rotated, rot_mat.astype(np.float32), cv2.invertAffineTransform(rot_mat).astype(np.float32)
+
+
+def center_square_crop_bgr(image_bgr: np.ndarray) -> tuple[np.ndarray, tuple[int, int, int, int]]:
+    height, width = image_bgr.shape[:2]
+    size = min(int(height), int(width))
+    x0 = max(0, (int(width) - size) // 2)
+    y0 = max(0, (int(height) - size) // 2)
+    return image_bgr[y0 : y0 + size, x0 : x0 + size].copy(), (x0, y0, size, size)
+
+
+def crop_bgr_by_xywh(image_bgr: np.ndarray, xywh: Sequence[int | float] | None) -> np.ndarray:
+    if xywh is None or len(xywh) != 4:
+        return image_bgr
+    height, width = image_bgr.shape[:2]
+    x, y, w, h = [int(round(float(v))) for v in xywh]
+    x0 = max(0, min(width, x))
+    y0 = max(0, min(height, y))
+    x1 = max(x0, min(width, x0 + max(0, w)))
+    y1 = max(y0, min(height, y0 + max(0, h)))
+    if x1 <= x0 or y1 <= y0:
+        return image_bgr
+    return image_bgr[y0:y1, x0:x1].copy()
 
 
 def warp_points_affine(points_xy: np.ndarray, affine_mat: np.ndarray) -> np.ndarray:
@@ -690,6 +723,33 @@ def resize_to_height(image: np.ndarray, target_height: int) -> tuple[np.ndarray,
     return cv2.resize(image, (target_width, target_height), interpolation=interpolation), scale
 
 
+def points_inside_display_image_mask(
+    points_xy: np.ndarray,
+    image_bgr: np.ndarray,
+    *,
+    reject_black_padding: bool = False,
+    padding_threshold: int = 4,
+) -> np.ndarray:
+    points = np.asarray(points_xy, dtype=np.float32).reshape(-1, 2)
+    if points.shape[0] == 0:
+        return np.zeros((0,), dtype=bool)
+    height, width = image_bgr.shape[:2]
+    finite = np.isfinite(points[:, 0]) & np.isfinite(points[:, 1])
+    inside = (
+        finite
+        & (points[:, 0] >= 0.0)
+        & (points[:, 1] >= 0.0)
+        & (points[:, 0] <= float(max(width - 1, 0)))
+        & (points[:, 1] <= float(max(height - 1, 0)))
+    )
+    if not reject_black_padding or not np.any(inside):
+        return inside
+    xs = np.clip(np.rint(points[:, 0]).astype(np.int32), 0, max(width - 1, 0))
+    ys = np.clip(np.rint(points[:, 1]).astype(np.int32), 0, max(height - 1, 0))
+    content = np.max(image_bgr, axis=2) > int(padding_threshold)
+    return inside & content[ys, xs]
+
+
 def crop_black_border(image: np.ndarray, threshold: int = 4, margin: int = 4) -> tuple[np.ndarray, tuple[int, int]]:
     if image.ndim != 3 or image.shape[2] != 3:
         return image, (0, 0)
@@ -743,12 +803,20 @@ def project_query_center_to_latlon(
     homography,
     retrieval_zoom: int,
     display_zoom: int,
+    homography_direction: str = "query_to_gallery",
 ) -> tuple[float, float, float, float] | None:
     if homography is None:
         return None
     H = np.asarray(homography, dtype=np.float64)
     if H.shape != (3, 3) or not np.all(np.isfinite(H)):
         return None
+    if str(homography_direction) == "gallery_to_query":
+        try:
+            H = np.linalg.inv(H)
+        except np.linalg.LinAlgError:
+            return None
+        if H.shape != (3, 3) or not np.all(np.isfinite(H)):
+            return None
     qh, qw = query_bgr.shape[:2]
     gh, gw = gallery_bgr.shape[:2]
     center = np.asarray([[[qw * 0.5, qh * 0.5]]], dtype=np.float32)
@@ -880,7 +948,15 @@ def render_green_inlier_match_vis(
         put_text(canvas, "No valid geometric inliers found for this frame.", (34, 378), scale=0.8, color=MUTED, thickness=2)
         return canvas
 
-    inlier_idx = np.flatnonzero(h_mask)
+    visible_pairs = (
+        points_inside_display_image_mask(
+            mk1,
+            query_vis,
+            reject_black_padding=debug.get("display_query_rot_angle") is not None,
+        )
+        & points_inside_display_image_mask(mk0, gallery_vis)
+    )
+    inlier_idx = np.flatnonzero(h_mask & visible_pairs)
     for idx in inlier_idx:
         qx = int(round(query_x0 + (float(mk1[idx, 0]) - float(query_offset[0])) * query_scale))
         qy = int(round(query_y0 + (float(mk1[idx, 1]) - float(query_offset[1])) * query_scale))
@@ -958,7 +1034,15 @@ def render_dkm_top_conf_match_vis(
         put_text(canvas, "No valid dense inlier set found for this frame.", (34, 378), scale=0.8, color=MUTED, thickness=2)
         return canvas
 
-    inlier_idx = np.flatnonzero(inliers)
+    visible_pairs = (
+        points_inside_display_image_mask(
+            mk1,
+            query_vis,
+            reject_black_padding=debug.get("display_query_rot_angle") is not None,
+        )
+        & points_inside_display_image_mask(mk0, gallery_vis)
+    )
+    inlier_idx = np.flatnonzero(inliers & visible_pairs)
     if inlier_idx.size > 0:
         conf_order = inlier_idx[np.argsort(-mconf[inlier_idx])]
         chosen_idx = select_spatially_diverse_matches(
@@ -1076,6 +1160,8 @@ def run_match_visuals(
     retrieval_zoom: int,
     display_zoom: int,
     display_gallery_dir: Path | None,
+    square_query_crop: bool,
+    disable_top1_center_prediction_fallback: bool,
     visual_calc_min_inliers: int,
     visual_calc_min_inlier_ratio: float,
     visual_calc_max_gps_error_m: float,
@@ -1086,6 +1172,14 @@ def run_match_visuals(
         if not query_path:
             raise KeyError("Result is missing both 'query_path' and 'frame_path'")
         query_bgr = read_bgr(query_path)
+        if bool(square_query_crop):
+            query_bgr, crop_xywh = center_square_crop_bgr(query_bgr)
+            result["original_frame_path"] = str(query_path)
+            result["query_square_crop_xywh"] = [int(v) for v in crop_xywh]
+            result["query_preprocess"] = "center_square_crop_before_yaw_alignment_and_matching"
+        else:
+            result["query_preprocess"] = "none"
+        result["disable_top1_center_prediction_fallback"] = bool(disable_top1_center_prediction_fallback)
         gallery_bgr = load_display_tile_for_result(result, retrieval_zoom, display_zoom, display_gallery_dir)
         query_tensor = image_to_tensor(query_bgr, matcher.device)
         gallery_tensor = image_to_tensor(gallery_bgr, matcher.device)
@@ -1166,6 +1260,11 @@ def run_match_visuals(
                 debug=display_debug,
                 info=best_info,
             )
+        result["match_display_query"] = (
+            "yaw_aligned_query_coordinates"
+            if best_info is not None and str((best_info or {}).get("mode_name", "")).startswith("yaw_align")
+            else "query_coordinates"
+        )
         homography = None
         if best_debug is not None:
             homography = best_debug.get("homography")
@@ -1178,6 +1277,7 @@ def run_match_visuals(
             homography=homography,
             retrieval_zoom=retrieval_zoom,
             display_zoom=display_zoom,
+            homography_direction="gallery_to_query" if str(match_backend) == "dense_dkm" else "query_to_gallery",
         )
         cv2.imwrite(str(stable_path), match_vis_bgr)
         result["match_vis_path"] = str(stable_path)
@@ -1467,6 +1567,7 @@ def build_query_card(
     if not query_path:
         raise KeyError("Result is missing both 'query_path' and 'frame_path'")
     query_bgr = read_bgr(query_path)
+    query_bgr = crop_bgr_by_xywh(query_bgr, result.get("query_square_crop_xywh"))
     top1_tile_panel = render_top1_tile_panel(
         result,
         retrieval_zoom=retrieval_zoom,
@@ -1596,6 +1697,8 @@ def main() -> None:
         retrieval_zoom=zoom,
         display_zoom=display_zoom,
         display_gallery_dir=display_gallery_dir,
+        square_query_crop=bool(args.square_query_crop),
+        disable_top1_center_prediction_fallback=bool(args.disable_top1_center_prediction_fallback),
         visual_calc_min_inliers=args.visual_calc_min_inliers,
         visual_calc_min_inlier_ratio=args.visual_calc_min_inlier_ratio,
         visual_calc_max_gps_error_m=args.visual_calc_max_gps_error_m,
@@ -1665,6 +1768,9 @@ def main() -> None:
         "all_query_count": len(all_results),
         "selected_query_indices": [int(item["index"]) for item in results],
         "top1_selection_mode": str(args.top1_selection_mode),
+        "query_preprocess": "center_square_crop_before_yaw_alignment_and_matching" if bool(args.square_query_crop) else "none",
+        "match_display": "yaw_aligned_query_coordinates" if bool(args.use_yaw_alignment) else "query_coordinates",
+        "disable_top1_center_prediction_fallback": bool(args.disable_top1_center_prediction_fallback),
         "trajectory_mode": str(args.trajectory_mode),
         "imu_fusion_visual_weight": float(args.imu_fusion_visual_weight),
         "imu_fusion_gate_m": float(args.imu_fusion_gate_m),
