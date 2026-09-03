@@ -737,3 +737,14 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
 - No crash, malformed-row report or configuration change was observed.
 - Logged elapsed time at resumed candidate 2,000 was approximately `3588.7s`.
 - Decision: `KEEP` (continue unchanged).
+
+### Full same-area train cache — 3,000-query milestone
+
+- Heartbeat inspection at 2026-09-04 02:42 CST counted 3,180/13,851
+  written rows. The original durable process (`53993`) remains active/running.
+- The resumed-run log reached 3,150/13,827 after approximately `5631.2s`;
+  the additional 24 initial records remain part of the total cache.
+- Recent logs show normal candidate progress with no exception. No interim
+  aggregate accuracy calculation, fitting, filtering or parameter change was
+  performed; full cache integrity remains to be checked after completion.
+- Decision: `KEEP` (continue unchanged; no user action required).
