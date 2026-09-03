@@ -53,14 +53,34 @@ As of this handoff:
     (`Dis@1 = 48.12m`, `MA@20 = 35.94%`, `0.6989s/query`)
 - Next required stage:
   - deterministic same-area pilot with 2,000 train and 345 test queries
-  - the 2,000-query train cache is running under commit `93b4586`
-  - stop the line if the pre-registered oracle/calibration gates fail after the
-    single bounded HGB follow-up
+  - the 2,000-query train cache completed with 2,000 unique queries, exactly 20
+    candidates/query and all-finite features
+  - the 345-query test cache completed with 345 unique queries, exactly 20
+    candidates/query and all-finite features
+  - cache generation began from implementation commit `93b4586`; the fitter
+    leak fix is commit `b0fce4c` and does not change cache contents
+  - formal pilot decision: `REJECT`
+  - oracle headroom passed strongly, but the single bounded HGB follow-up only
+    improved 70%-coverage risk by `13.99%` versus the required `15%`
+  - stop this line now: do not build full same-area caches and do not run
+    cross-area validation without a new user-approved research plan
 - Pre-pilot audit note:
   - the initial 64/64 smoke fitter had a GT tie-break in raw risk sorting and
     test-set model comparison; its calibration/risk numbers are not evidence
   - both issues were found before formal fitting and corrected while the
     label-independent 2,000-query cache was running
+- Result notebook status:
+  - `Game4Loc/notebooks/gta_pose_likelihood_results.ipynb`
+  - executed successfully: 8/8 code cells, 0 error outputs
+  - 13 cells pass strict nbformat schema validation
+  - isolated notebook dependencies live under ignored `work_dir`, not the
+    comparable `gtauav` environment
+- Committed report target:
+  - `Game4Loc/reports/gta_pose_likelihood_20260903/README.md`
+- Final validation status for this line:
+  - 8/8 standard-library tests passed
+  - all new/modified Python entry points compile
+  - executed notebook has no error outputs and agrees with pilot summary gates
 - New research question:
   - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated
     abstention recover tile-boundary/top-1 failures without increasing

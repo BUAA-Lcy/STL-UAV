@@ -1,4 +1,5 @@
 import json
+import inspect
 import sys
 import tempfile
 import unittest
@@ -17,6 +18,7 @@ from game4loc.evaluate.gta_pose_likelihood import (
     build_feature_dict,
     prefer_inlier_candidate,
 )
+from game4loc.evaluate.gta import evaluate as evaluate_gta
 
 
 def _debug_points(homography):
@@ -135,6 +137,12 @@ class GTAPoseLikelihoodTests(unittest.TestCase):
         metrics = risk70(records, ConstantCalibrator())
         # ceil(10 * .70) keeps the first seven tied rows: mean(1..7) = 4.
         self.assertEqual(metrics["raw_inlier_mean_error_m"], 4.0)
+
+    def test_official_evaluator_defaults_preserve_legacy_dispatch(self):
+        parameters = inspect.signature(evaluate_gta).parameters
+        self.assertEqual(parameters["fine_retrieval_topk"].default, 1)
+        self.assertEqual(parameters["fine_selection_mode"].default, "legacy_inlier")
+        self.assertEqual(parameters["fine_calibrator_path"].default, "")
 
 
 if __name__ == "__main__":

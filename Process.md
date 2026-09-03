@@ -245,3 +245,205 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
 - Formal 2,000/345 fitting will use only the corrected implementation.
 - Decision: `REJECT` (the original smoke fitter logic); corrected fitter must
   pass tests before formal use.
+
+### Leakage-fix validation and snapshot
+
+- Added a regression test proving equal inlier-confidence rows are not ordered
+  by ground-truth error in risk-coverage calculation.
+- Standard-library tests after the fix: **7/7 passed**.
+- `git diff --check` and fitter `py_compile`: passed.
+- Commit: `b0fce4c` (`fix(gta): prevent pilot label leakage`).
+- Push: completed to `origin/codex/vop-experiment`.
+- Decision: `KEEP`.
+
+### Pilot train-cache rolling audit — 25%
+
+- Progress: 500/2,000 queries written; no crash or malformed-line event.
+- A read-only audit at 460 completed records found:
+  - exactly 20 candidates per query;
+  - all 24 candidate features finite;
+  - prefix legacy top-1 VOP: `Dis@1 = 53.91m`, `MA@20 = 44.35%`;
+  - prefix oracle top-5×top-4: `Dis@1 = 18.51m`, `MA@20 = 65.65%`;
+  - mean exhaustive candidate time: `1.713s/query`.
+- These prefix numbers are run-health diagnostics only and must not be used for
+  a gate or paper claim.
+- Decision: `KEEP` (continue cache generation).
+
+### Result notebook preparation
+
+- Added a 13-cell reader-facing notebook with:
+  - TL;DR, Context & Methods, Data, Results, and Takeaways sections;
+  - oracle/headline table, calibration curve, risk-coverage curve, fixed-cost
+    configurations, adaptive policy and validation audit;
+  - actual cached timing and candidate-count summaries.
+- Notebook:
+  - `Game4Loc/notebooks/gta_pose_likelihood_results.ipynb`
+- Validation attempt 1: **FAILED BEFORE VALIDATION** because `gtauav` did not
+  contain `nbformat`; the system and bundled workspace Python also lacked it.
+- Resolution:
+  - installed `nbformat`, `nbconvert`, and `ipykernel` only into ignored
+    `Game4Loc/work_dir/notebook_runtime`;
+  - did not modify the `gtauav` conda environment.
+- Strict nbformat schema validation then passed for all 13 cells.
+- Execution is intentionally deferred until the formal pilot summary/cache
+  artifacts exist.
+- Decision: `KEEP` (notebook structure; execution still pending).
+
+### Pilot train-cache rolling audit — 50%
+
+- Progress checkpoint: 1,000/2,000 queries; audit read 1,015 complete JSONL
+  records while generation continued.
+- Integrity:
+  - candidate count min/max: 20/20;
+  - all cached feature values finite.
+- Prefix health metrics:
+  - coarse top-1 mean error: `103.41m`;
+  - legacy top-1 VOP: `Dis@1 = 48.13m`, `MA@20 = 42.86%`;
+  - oracle top-5×top-4: `Dis@1 = 19.11m`, `MA@20 = 63.55%`;
+  - mean exhaustive candidate time: `1.744s/query`.
+- As at 25%, these are diagnostic-only prefix values. No fitting, threshold
+  selection or gate decision was performed.
+- Decision: `KEEP` (continue unchanged).
+
+### Formal pilot train cache — completion
+
+- Result: **COMPLETED**, exit code 0.
+- Final integrity audit:
+  - 2,000 JSONL records;
+  - 2,000 unique query names;
+  - exactly 20 candidates per query;
+  - all candidate feature values finite;
+  - manifest fingerprint:
+    `b19cad0b8a39c2f4d9c715bd02aa6db36cf35cb48dffcb475d18f978670c07e4`.
+- Candidate-stage elapsed time reported by the builder: `3682.7s`.
+- No interruption/resume was needed during this run.
+- Decision: `KEEP`.
+
+### Formal pilot test cache — 345 queries
+
+- Status: **RUNNING** at the time of this entry.
+- Sampling: deterministic stratified sample, seed `20260903`.
+- Candidate budget: retrieval top-5 × VOP top-4.
+- Output:
+  - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/pilot_test345.jsonl`
+- Exact command:
+
+```bash
+cd /home/lcy/Workplace/GTA-UAV/Game4Loc
+WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
+  build_gta_pose_hypothesis_cache.py \
+  --data_root ./data/GTA-UAV-data \
+  --pairs_meta_file same-area-drone2sate-test.json \
+  --checkpoint_start ./pretrained/gta/vit_base_eva_gta_same_area.pth \
+  --orientation_checkpoint ./work_dir/gta_vop_same_area_runs/gta_samearea_fullteacher_exp_c_20260417_125519/artifacts/gta_samearea_useful5_weight30_e6.pth \
+  --retrieval_topk 5 --orientation_topk 4 \
+  --query_limit 345 --sample_mode stratified --sample_seed 20260903 \
+  --batch_size 64 --num_workers 0 \
+  --output_path ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/pilot_test345.jsonl \
+  --overwrite
+```
+
+### Formal pilot test cache — completion
+
+- Result: **COMPLETED**, exit code 0.
+- Final integrity audit:
+  - 345 JSONL records and 345 unique query names;
+  - exactly 20 candidates per query;
+  - all candidate feature values finite;
+  - manifest fingerprint:
+    `b4db3419d6ef9054363651c5e9f63ec74e465877edf2f95545ad90ed49765b2d`.
+- Decision: `KEEP` (cache artifact).
+
+### Formal pilot / oracle / calibration result — 2,000 train, 345 test
+
+- Corrected fitter commit: `b0fce4c`.
+- Logistic model was fitted first with `C ∈ {0.1, 1, 10}` and temperature
+  scaling under the fixed query-group split.
+- The logistic calibration gate failed, so the one allowed fixed shallow HGB
+  follow-up was run. No further model or threshold sweep was performed.
+- Test baselines:
+  - coarse top-1: `Dis@1 = 140.02m`, `MA@20 = 7.54%`;
+  - legacy top-1 VOP: `Dis@1 = 86.36m`, `MA@20 = 42.61%`,
+    `worse-than-coarse = 11.88%`, catastrophic `= 2.90%`;
+  - raw top-5×top-4: `Dis@1 = 158.98m`, `MA@20 = 45.22%`,
+    `worse-than-coarse = 16.23%`, catastrophic `= 7.83%`;
+  - oracle top-5×top-4: `Dis@1 = 26.59m`, `MA@20 = 65.51%`.
+- Oracle headroom versus legacy:
+  - relative `Dis@1` reduction: `69.21%` (required ≥15%);
+  - `MA@20` increase: `+22.90pp` (required ≥8pp);
+  - oracle gate: **PASSED**.
+- Initial logistic audit:
+  - AUROC `0.8532`, AUPRC `0.4289`, NLL `0.4607`, Brier `0.1476`,
+    ECE `0.2129`;
+  - 70%-coverage mean error `24.69m` versus raw-inlier `26.68m`;
+  - risk improvement `7.45%`.
+- Fixed HGB follow-up audit:
+  - AUROC `0.8682` (required ≥0.75): passed;
+  - AUPRC `0.5087`, NLL `0.2833`, Brier `0.0872`;
+  - ECE `0.0206` (required ≤0.05): passed;
+  - 70%-coverage mean error `22.94m` versus raw-inlier `26.68m`;
+  - risk improvement `13.99%` (required ≥15%): **failed**.
+- Learned adaptive policy test result (reported diagnostically despite failed
+  gate):
+  - `Dis@1 = 74.72m`, `MA@20 = 47.25%`;
+  - `worse-than-coarse = 5.51%`, catastrophic `= 0.58%`;
+  - mean hypotheses/query `= 7.08`.
+- Artifacts:
+  - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/pilot_calibrator.json`
+  - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/pilot_summary.json`
+  - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/pilot_summary.md`
+- Interpretation:
+  - multi-tile candidate generation has strong oracle headroom;
+  - naive inlier selection is unsafe and catastrophically worsens mean error;
+  - the fixed nonlinear calibrator is well ranked and calibrated, but narrowly
+    misses the pre-registered selective-risk improvement requirement;
+  - per the plan, do not generate full 13,851/3,443 caches and do not enter
+    cross-area validation.
+- Decision: `REJECT`.
+
+### Result notebook execution
+
+- Runtime dependencies were loaded from the isolated ignored directory:
+  - `Game4Loc/work_dir/notebook_runtime`
+- Execution command used `nbconvert --execute --inplace` with the `gtauav`
+  Python kernel and a 600-second cell timeout.
+- Result: **COMPLETED**, exit code 0.
+- Post-execution validation:
+  - 13 total cells;
+  - 8/8 code cells have execution counts;
+  - 13 output blocks;
+  - 0 error outputs;
+  - strict nbformat schema validation passed.
+- The TCP-without-encryption warning is a local ephemeral kernel transport
+  warning; no remote notebook service was used.
+- Decision: `KEEP` (executed audit artifact).
+
+### Legacy evaluator compatibility audit
+
+- Compared `Game4Loc/game4loc/evaluate/gta.py` against pre-implementation
+  commit `06ff837`.
+- The legacy `prior_topk` candidate-selection block is source-identical; the
+  new multi-tile branch is inserted before it and is disabled when:
+  - `fine_retrieval_topk = 1`;
+  - `fine_selection_mode = legacy_inlier`.
+- Added a regression test for these three official evaluator defaults,
+  including the empty calibrator path.
+- This is a source/control-flow equivalence check: every query under the
+  default flags executes the unchanged legacy block. The 64-query official
+  calibrated smoke separately validates the opt-in branch.
+- Decision: `KEEP`.
+
+### Final validation before report commit
+
+- `git diff --check`: passed.
+- `py_compile`: passed for cache builder, fitter, likelihood helper, CLI
+  evaluator and official GTA evaluator.
+- Standard-library unit tests: **8/8 passed**.
+- Executed notebook and JSON summary consistency audit:
+  - first attempt passed assertions but emitted a `ResourceWarning` because the
+    one-off audit script did not explicitly close `pilot_summary.json`;
+  - corrected `Path.read_text()` audit passed under `-W error` with no warning;
+  - confirmed decision `REJECT`, oracle gate passed, calibration gate failed,
+    and the single HGB follow-up was used.
+- Decision: `KEEP` (validation), while the research method decision remains
+  `REJECT`.
