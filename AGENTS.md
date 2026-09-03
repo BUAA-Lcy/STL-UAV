@@ -116,7 +116,7 @@ As of this handoff:
   - cache log: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.log`
   - resume output: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.jsonl`
   - resume was verified by candidate count advancing from 24 to 35
-  - latest heartbeat: 9,259/13,851 written rows at 2026-09-04 05:48 CST;
+  - latest heartbeat: 10,288/13,851 written rows at 2026-09-04 06:19 CST;
     original service active, no protocol change; final integrity audit pending
 - New research question:
   - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated
