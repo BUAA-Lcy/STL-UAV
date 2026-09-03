@@ -748,3 +748,13 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   aggregate accuracy calculation, fitting, filtering or parameter change was
   performed; full cache integrity remains to be checked after completion.
 - Decision: `KEEP` (continue unchanged; no user action required).
+
+### Full same-area train cache — 4,000-query milestone
+
+- At 2026-09-04 03:13 CST the cache contained 4,223/13,851 written rows.
+- The original durable process (`53993`) remains active/running. The resumed
+  log crossed 4,000 new queries at `7147.1s`; recent output shows continued
+  progress without an exception.
+- No configuration change, fitting or interim aggregate evaluation was
+  performed. Final uniqueness/feature/fingerprint checks remain pending.
+- Decision: `KEEP` (continue unchanged; no user action required).
