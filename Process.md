@@ -137,6 +137,10 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   - log: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.log`.
 - The cache configuration and scientific protocol did not change during the
   wrapper migration.
+- Durable-resume validation:
+  - both retrieval feature passes completed under the service;
+  - candidate rows increased from 24 to 35 without duplication/overwrite;
+  - the output timestamp and byte size advanced normally.
 - Decision: `KEEP` (continue the durable resumed process).
 
 Warnings from deprecated AMP/albumentations argument spellings were observed;
