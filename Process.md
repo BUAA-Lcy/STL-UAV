@@ -725,3 +725,15 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
 - No new exception, malformed-record report, configuration change or scientific
   decision occurred.
 - Decision: `KEEP` (continue unchanged; no user action required).
+
+### Full same-area train cache — 2,000-query milestone
+
+- The durable systemd process remains active under the original PID `53993`.
+- The resumed candidate stage crossed 2,000 new records; including the 24
+  records written before the wrapper migration, the cache contained 2,130
+  complete queries at inspection time.
+- Output size was approximately `69.5 MB`, and the modification timestamp was
+  advancing normally.
+- No crash, malformed-row report or configuration change was observed.
+- Logged elapsed time at resumed candidate 2,000 was approximately `3588.7s`.
+- Decision: `KEEP` (continue unchanged).

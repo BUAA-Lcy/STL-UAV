@@ -116,6 +116,8 @@ As of this handoff:
   - cache log: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.log`
   - resume output: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.jsonl`
   - resume was verified by candidate count advancing from 24 to 35
+  - latest heartbeat: 2,130/13,851 complete; service active with no protocol
+    change or error
   - latest heartbeat milestone: 1,097/13,851 records at 2026-09-04 01:40 CST;
     service healthy, no protocol change
 - New research question:
