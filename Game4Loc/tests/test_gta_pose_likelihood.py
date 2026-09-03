@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from build_gta_pose_hypothesis_cache import _read_completed, _stratified_indices
 from fit_gta_pose_likelihood import risk70
+from audit_gta_pose_likelihood_statistics import tie_aware_risk
 from game4loc.evaluate.gta_pose_likelihood import (
     CALIBRATOR_SCHEMA_VERSION,
     FEATURE_NAMES,
@@ -143,6 +144,13 @@ class GTAPoseLikelihoodTests(unittest.TestCase):
         self.assertEqual(parameters["fine_retrieval_topk"].default, 1)
         self.assertEqual(parameters["fine_selection_mode"].default, "legacy_inlier")
         self.assertEqual(parameters["fine_calibrator_path"].default, "")
+
+    def test_tie_aware_risk_is_independent_of_tied_row_order(self):
+        confidence = np.asarray([10.0, 10.0, 5.0])
+        first = tie_aware_risk(confidence, np.asarray([0.0, 100.0, 30.0]), coverage=1.0 / 3.0)
+        second = tie_aware_risk(confidence, np.asarray([100.0, 0.0, 30.0]), coverage=1.0 / 3.0)
+        self.assertEqual(first, 50.0)
+        self.assertEqual(second, 50.0)
 
 
 if __name__ == "__main__":

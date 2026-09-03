@@ -83,6 +83,24 @@ As of this handoff:
   - 8/8 standard-library tests passed
   - all new/modified Python entry points compile
   - executed notebook has no error outputs and agrees with pilot summary gates
+- The user subsequently re-opened experiments after challenging the heuristic
+  70%/15% gate. The active next step is a frozen-model statistical audit:
+  - 10,000 paired query bootstraps, seed `20260903`
+  - tie-aware risk at 50/70/90% and AURC over 10–100% coverage
+  - do not refit or tune on the 345-query test cache
+  - if central effects are favorable but CIs are inconclusive, the only next
+    follow-up is the complete 3,443-query same-area test with the calibrator
+    frozen
+- Statistical audit result: `KEEP`.
+  - adaptive mean-error improvement: `11.64m`, 95% CI `[7.38,16.53]`
+  - MA@20 improvement: `4.64pp`, 95% CI `[1.74,7.83]`
+  - catastrophic reduction: `2.32pp`, 95% CI `[0.58,4.06]`
+  - tie-aware AURC improvement: `9.86m`, 95% CI `[3.41,19.29]`
+- The active GPU follow-up is the complete 3,443-query same-area test cache
+  with the 2,000-query calibrator frozen.
+  - report all 3,443 for protocol completeness
+  - treat the 3,098 queries outside the pilot subset as the primary
+    confirmatory holdout
 - New research question:
   - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated
     abstention recover tile-boundary/top-1 failures without increasing

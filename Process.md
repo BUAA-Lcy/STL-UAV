@@ -465,3 +465,93 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   - split sizes 1,400/300/300 queries.
 - No artifact, model choice or experiment decision was changed.
 - Decision: `KEEP` (audit detail only).
+
+## 2026-09-03 — Statistical follow-up after the user re-opened the line
+
+### Motivation and pre-registered interpretation
+
+- The user explicitly requested that experiments continue after questioning
+  the heuristic `70% coverage / 15% improvement` gate.
+- This re-opens the line under a new, statistically interpretable audit; it
+  does not retroactively change the recorded result of the first plan.
+- Fixed inputs:
+  - the existing 2,000-query training cache;
+  - the existing 345-query test cache;
+  - the already fitted HGB calibrator and adaptive policy;
+  - no refitting, feature change, threshold tuning or new model sweep.
+- Statistical audit to run before any new GPU cache:
+  - paired query bootstrap with 10,000 replicates and seed `20260903`;
+  - effect sizes and percentile 95% confidence intervals for adaptive versus
+    legacy `Dis@1`, `MA@20`, worse-than-coarse and catastrophic rates;
+  - tie-aware selective risk at 50%, 70% and 90% coverage;
+  - tie-aware AURC over coverage 10%–100%.
+- Tie-aware means that when a coverage cutoff falls inside a set of equal
+  confidence values—common for integer inlier counts—the expected error of the
+  whole tie group is fractionally included. Query file order cannot break ties.
+- Follow-up decision rule:
+  - `KEEP` if the 95% CIs support improvements in adaptive mean error, MA@20,
+    AURC, and non-increase in catastrophic rate;
+  - `NEEDS ONE FOLLOW-UP` if all central estimates are favorable but one or
+    more CIs include zero; the one follow-up is frozen-calibrator evaluation on
+    the complete 3,443-query same-area test set;
+  - `REJECT` if a central estimate is unfavorable.
+- This rule tests direction and uncertainty rather than imposing another
+  arbitrary minimum percentage improvement.
+
+### Statistical follow-up result — 10,000 paired bootstraps
+
+- Implementation:
+  - `Game4Loc/audit_gta_pose_likelihood_statistics.py`
+  - tie-aware risk regression added to the unit-test suite
+  - risk curves use one stable sort and fractional expected error within a
+    confidence tie group
+- Validation: 9/9 standard-library tests passed; script compiled and
+  `git diff --check` passed.
+- Adaptive versus legacy paired effects (positive favors adaptive):
+  - mean-error improvement: `11.64m`, 95% CI `[7.38, 16.53]`;
+  - MA@20 improvement: `+4.64pp`, 95% CI `[1.74, 7.83]`;
+  - worse-than-coarse reduction: `6.38pp`, 95% CI `[3.77, 9.28]`;
+  - catastrophic +50m reduction: `2.32pp`, 95% CI `[0.58, 4.06]`.
+- Tie-aware selective-risk improvement:
+  - 50% coverage: `5.51m` / `20.56%`, 95% CI in metres
+    `[2.17, 8.78]`;
+  - 70% coverage: `3.69m` / `13.86%`, 95% CI `[1.53, 6.17]`;
+  - 90% coverage: `3.24m` / `10.96%`, 95% CI `[0.80, 53.29]`.
+- Tie-aware AURC over 10%–100% coverage:
+  - calibrated: `24.77m`;
+  - raw inlier: `34.62m`;
+  - improvement: `9.86m` / `28.47%`, 95% CI `[3.41, 19.29]`.
+- All pre-registered central effects are favorable and all required confidence
+  intervals support the direction of improvement.
+- Artifacts:
+  - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/statistical_audit.json`
+  - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/statistical_audit.md`
+- Decision: `KEEP`.
+
+### Frozen-calibrator full-test follow-up — start
+
+- The fitted 2,000-query HGB calibrator and adaptive thresholds remain frozen.
+- Generate all 3,443 same-area test queries at top-5×top-4.
+- Report two views after completion:
+  - all 3,443 queries for complete-protocol comparability;
+  - the 3,098 queries not used in the 345-query pilot as the primary
+    confirmatory holdout.
+- No model, feature or threshold is selected using the 3,098-query holdout.
+- Output:
+  - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_test3443_frozen2000.jsonl`
+- Exact command:
+
+```bash
+cd /home/lcy/Workplace/GTA-UAV/Game4Loc
+WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
+  build_gta_pose_hypothesis_cache.py \
+  --data_root ./data/GTA-UAV-data \
+  --pairs_meta_file same-area-drone2sate-test.json \
+  --checkpoint_start ./pretrained/gta/vit_base_eva_gta_same_area.pth \
+  --orientation_checkpoint ./work_dir/gta_vop_same_area_runs/gta_samearea_fullteacher_exp_c_20260417_125519/artifacts/gta_samearea_useful5_weight30_e6.pth \
+  --retrieval_topk 5 --orientation_topk 4 \
+  --query_limit 0 --sample_mode sequential --sample_seed 20260903 \
+  --batch_size 64 --num_workers 0 \
+  --output_path ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_test3443_frozen2000.jsonl \
+  --overwrite
+```
