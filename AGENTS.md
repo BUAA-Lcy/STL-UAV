@@ -60,6 +60,8 @@ As of this handoff:
   - cache generation began from implementation commit `93b4586`; the fitter
     leak fix is commit `b0fce4c` and does not change cache contents
   - formal pilot decision: `REJECT`
+  - initial logistic selected `C=1.0` on 1,400/300/300 grouped splits;
+    temperature was `1.2115`
   - oracle headroom passed strongly, but the single bounded HGB follow-up only
     improved 70%-coverage risk by `13.99%` versus the required `15%`
   - stop this line now: do not build full same-area caches and do not run

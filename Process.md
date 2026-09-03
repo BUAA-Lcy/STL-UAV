@@ -373,6 +373,9 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   - `MA@20` increase: `+22.90pp` (required ≥8pp);
   - oracle gate: **PASSED**.
 - Initial logistic audit:
+  - grouped split: 1,400 train / 300 model-selection / 300 calibration
+    queries;
+  - selected `C = 1.0`, validation NLL `0.4272`, temperature `1.2115`;
   - AUROC `0.8532`, AUPRC `0.4289`, NLL `0.4607`, Brier `0.1476`,
     ECE `0.2129`;
   - 70%-coverage mean error `24.69m` versus raw-inlier `26.68m`;
@@ -447,3 +450,18 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
     and the single HGB follow-up was used.
 - Decision: `KEEP` (validation), while the research method decision remains
   `REJECT`.
+
+### Logistic-detail reproducibility check
+
+- The final HGB artifact replaces the logistic payload, so the selected
+  logistic hyperparameter was not retained in `pilot_summary.json`.
+- First read-only recomputation completed, but the command wrapper lost its
+  stdout session handle; no result was claimed from that invocation.
+- A second deterministic recomputation on the same frozen cache and seed
+  completed successfully and reported:
+  - `C = 1.0`;
+  - validation NLL `0.4271913`;
+  - temperature `1.2115207`;
+  - split sizes 1,400/300/300 queries.
+- No artifact, model choice or experiment decision was changed.
+- Decision: `KEEP` (audit detail only).
