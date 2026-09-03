@@ -186,3 +186,62 @@ they are pre-existing environment/code warnings and have not stopped the run.
   does not use yaw metadata.
 - Decision: `KEEP` (official-evaluator integration only; metrics are not paper
   evidence).
+
+### Implementation snapshot
+
+- Validation before commit:
+  - `git diff --check`: passed
+  - `py_compile`: passed for cache builder, fitter, helper and both evaluator
+    entry points
+  - standard-library unit tests: 6/6 passed
+- Commit: `93b4586` (`feat(gta): add calibrated multi-tile pose hypotheses`)
+- Push: completed to `origin/codex/vop-experiment`.
+- Remote again reported the repository-moved notice, but accepted the push.
+- Decision: `KEEP`.
+
+### Formal pilot train cache — 2,000 queries
+
+- Status: **RUNNING** at the time of this entry.
+- Sampling: deterministic stratified sample, seed `20260903`.
+- Candidate budget: retrieval top-5 × VOP top-4.
+- Output:
+  - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/pilot_train2000.jsonl`
+- Exact command:
+
+```bash
+cd /home/lcy/Workplace/GTA-UAV/Game4Loc
+WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
+  build_gta_pose_hypothesis_cache.py \
+  --data_root ./data/GTA-UAV-data \
+  --pairs_meta_file same-area-drone2sate-train.json \
+  --checkpoint_start ./pretrained/gta/vit_base_eva_gta_same_area.pth \
+  --orientation_checkpoint ./work_dir/gta_vop_same_area_runs/gta_samearea_fullteacher_exp_c_20260417_125519/artifacts/gta_samearea_useful5_weight30_e6.pth \
+  --retrieval_topk 5 --orientation_topk 4 \
+  --query_limit 2000 --sample_mode stratified --sample_seed 20260903 \
+  --batch_size 64 --num_workers 0 \
+  --output_path ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/pilot_train2000.jsonl \
+  --overwrite
+```
+
+### Pre-pilot fitter audit — two label-leakage defects
+
+- While preparing the result notebook, static inspection found two defects in
+  the smoke-only fitter implementation:
+  1. Python tuple sorting in the raw-inlier 70%-coverage baseline implicitly
+     used candidate error as a tie-break when inlier counts tied.
+  2. After the fixed HGB follow-up ran, logistic versus HGB was selected using
+     pilot test metrics.
+- Impact:
+  - the already reported 64/64 smoke calibration/risk values are invalid as
+    calibration evidence (they were already marked smoke-only and `REJECT`);
+  - cache contents, candidate features, oracle results and official evaluator
+    integration are unaffected.
+- Fix:
+  - sort risk-coverage rows only by observable confidence, preserving input
+    order for ties;
+  - when the pre-registered HGB follow-up is triggered, report that fixed model
+    directly rather than choosing between models on test labels;
+  - retain initial logistic metrics in the summary for auditability.
+- Formal 2,000/345 fitting will use only the corrected implementation.
+- Decision: `REJECT` (the original smoke fitter logic); corrected fitter must
+  pass tests before formal use.

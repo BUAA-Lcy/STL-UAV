@@ -53,8 +53,14 @@ As of this handoff:
     (`Dis@1 = 48.12m`, `MA@20 = 35.94%`, `0.6989s/query`)
 - Next required stage:
   - deterministic same-area pilot with 2,000 train and 345 test queries
+  - the 2,000-query train cache is running under commit `93b4586`
   - stop the line if the pre-registered oracle/calibration gates fail after the
     single bounded HGB follow-up
+- Pre-pilot audit note:
+  - the initial 64/64 smoke fitter had a GT tie-break in raw risk sorting and
+    test-set model comparison; its calibration/risk numbers are not evidence
+  - both issues were found before formal fitting and corrected while the
+    label-independent 2,000-query cache was running
 - New research question:
   - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated
     abstention recover tile-boundary/top-1 failures without increasing

@@ -9,6 +9,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from build_gta_pose_hypothesis_cache import _read_completed, _stratified_indices
+from fit_gta_pose_likelihood import risk70
 from game4loc.evaluate.gta_pose_likelihood import (
     CALIBRATOR_SCHEMA_VERSION,
     FEATURE_NAMES,
@@ -108,6 +109,32 @@ class GTAPoseLikelihoodTests(unittest.TestCase):
     def test_feature_schema_contains_no_ground_truth_labels(self):
         forbidden = ("error", "ground_truth", "success", "improves", "catastrophic")
         self.assertFalse(any(token in name for name in FEATURE_NAMES for token in forbidden))
+
+    def test_risk_coverage_does_not_break_confidence_ties_with_error(self):
+        class ConstantCalibrator:
+            @staticmethod
+            def best_candidate(candidates):
+                return candidates[0], 1.0
+
+        records = []
+        for error in range(1, 11):
+            records.append(
+                {
+                    "query_name": f"q{error}",
+                    "coarse_top1_error_m": 100.0,
+                    "candidates": [
+                        {
+                            "retrieval_rank": 1,
+                            "angle_rank": 1,
+                            "inliers": 10,
+                            "error_m": float(error),
+                        }
+                    ],
+                }
+            )
+        metrics = risk70(records, ConstantCalibrator())
+        # ceil(10 * .70) keeps the first seven tied rows: mean(1..7) = 4.
+        self.assertEqual(metrics["raw_inlier_mean_error_m"], 4.0)
 
 
 if __name__ == "__main__":

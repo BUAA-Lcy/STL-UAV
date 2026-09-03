@@ -294,8 +294,12 @@ def risk70(records: Sequence[Mapping], calibrator: PoseLikelihoodCalibrator) -> 
         calibrated_rows.append((float(confidence), float(selected["error_m"])))
         raw_rows.append((float(raw.get("inliers", 0)), float(raw["error_m"])))
     keep = max(1, int(math.ceil(len(calibrated_rows) * 0.70)))
-    calibrated_error = float(np.mean([row[1] for row in sorted(calibrated_rows, reverse=True)[:keep]]))
-    raw_error = float(np.mean([row[1] for row in sorted(raw_rows, reverse=True)[:keep]]))
+    # Sort only on the observable confidence.  Including error as an implicit
+    # tuple tie-break would leak ground truth whenever inlier counts tie.
+    calibrated_error = float(
+        np.mean([row[1] for row in sorted(calibrated_rows, key=lambda row: row[0], reverse=True)[:keep]])
+    )
+    raw_error = float(np.mean([row[1] for row in sorted(raw_rows, key=lambda row: row[0], reverse=True)[:keep]]))
     relative = (raw_error - calibrated_error) / max(raw_error, 1e-9)
     return {
         "coverage": 0.70,
@@ -506,6 +510,7 @@ def main() -> None:
         and metrics["ECE_15_equal_mass"] <= CALIBRATION_ECE
         and risk["relative_improvement"] >= RISK70_RELATIVE
     )
+    initial_logistic = {"metrics": metrics, "risk70": risk}
     followup_used = False
     if oracle_pass and not calibration_pass and args.allow_hgb_followup:
         hgb_payload, calibration_names = _hgb_payload(train_records, args.seed)
@@ -513,10 +518,10 @@ def main() -> None:
         hgb_probabilities = hgb_calibrator.predict_proba_matrix(x_eval)
         hgb_metrics = classification_metrics(y_eval, hgb_probabilities)
         hgb_risk = risk70(eval_records, hgb_calibrator)
-        if (hgb_metrics["AUROC"], -hgb_metrics["ECE_15_equal_mass"], hgb_risk["relative_improvement"]) > (
-            metrics["AUROC"], -metrics["ECE_15_equal_mass"], risk["relative_improvement"]
-        ):
-            payload, calibrator, metrics, risk = hgb_payload, hgb_calibrator, hgb_metrics, hgb_risk
+        # This is the single pre-registered follow-up, not a test-set model
+        # sweep.  Once triggered, report the fixed HGB result directly instead
+        # of selecting between logistic and HGB using held-out test labels.
+        payload, calibrator, metrics, risk = hgb_payload, hgb_calibrator, hgb_metrics, hgb_risk
         followup_used = True
         calibration_pass = (
             metrics["AUROC"] >= CALIBRATION_AUROC
@@ -543,6 +548,7 @@ def main() -> None:
             "metrics": metrics,
             "risk70": risk,
             "followup_used": followup_used,
+            "initial_logistic": initial_logistic,
         },
         "fixed_configuration_rows": fixed_rows,
         "selected_fixed_configuration": fixed_selected,
@@ -564,4 +570,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
