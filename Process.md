@@ -710,3 +710,18 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   --output_path ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.jsonl \
   --overwrite
 ```
+
+### Full same-area train cache — 1,000-query milestone
+
+- Heartbeat check at 2026-09-04 01:40 CST found the durable systemd unit
+  `codex-gta-full-train-cache-20260904.service` healthy and active with its
+  original main PID `53993`.
+- The append-only cache reached 1,097/13,851 total records, crossing the first
+  1,000-query milestone; the log's resumed-run counter crossed 1,050/13,827
+  because 24 records predated the durable resume.
+- Output size was approximately 35.8 MB and its modification time continued to
+  advance. The latest logged queries included hard cases with high coarse and
+  oracle errors; no filtering or exclusion was introduced.
+- No new exception, malformed-record report, configuration change or scientific
+  decision occurred.
+- Decision: `KEEP` (continue unchanged; no user action required).
