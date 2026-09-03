@@ -118,6 +118,27 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   sample; it is not used as paper evidence.
 - Decision: `KEEP` (use the explicit HGB family for the final train-only fit).
 
+### Full same-area train cache — durable execution handoff
+
+- The initial interactive process completed both retrieval feature passes and
+  wrote 24/13,851 candidate records.
+- It was deliberately interrupted to move the multi-hour run away from the
+  interactive PTY. The JSONL is flushed once/query, so all 24 records remained
+  valid.
+- A first plain `nohup` attempt exited immediately with an empty log. This is
+  recorded as an execution-wrapper failure, not a model/data failure; no cache
+  row was lost or duplicated.
+- A foreground `--resume` check accepted the existing manifest fingerprint and
+  began feature extraction normally; it was stopped before candidate writing.
+- Durable execution was then started as the user-level transient systemd unit:
+  - unit: `codex-gta-full-train-cache-20260904.service`;
+  - initial main PID: `53993`;
+  - mode: the same command with `--resume` instead of `--overwrite`;
+  - log: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.log`.
+- The cache configuration and scientific protocol did not change during the
+  wrapper migration.
+- Decision: `KEEP` (continue the durable resumed process).
+
 Warnings from deprecated AMP/albumentations argument spellings were observed;
 they are pre-existing environment/code warnings and have not stopped the run.
 

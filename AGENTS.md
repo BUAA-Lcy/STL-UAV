@@ -112,6 +112,9 @@ As of this handoff:
   - then refit the final calibrator using train only
   - final family is pre-fixed to the pilot follow-up HGB via
     `--model_type hist_gradient_boosting`; do not let test metrics select it
+  - durable cache unit: `codex-gta-full-train-cache-20260904.service`
+  - cache log: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.log`
+  - resume output: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.jsonl`
 - New research question:
   - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated
     abstention recover tile-boundary/top-1 failures without increasing
