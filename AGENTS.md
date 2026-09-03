@@ -34,20 +34,38 @@ The current working diagnosis is:
 As of this handoff:
 
 - Active branch: `codex/vop-experiment`
-- Current uncommitted work exists in:
-  - `AGENTS.md`
-  - `Paper.md`
-  - `Game4Loc/eval_gta.py`
-  - `Game4Loc/eval_visloc.py`
-  - `Game4Loc/game4loc/evaluate/gta.py`
-  - `Game4Loc/game4loc/matcher/gim_dkm.py`
-  - `Game4Loc/game4loc/matcher/sparse_sp_lg.py`
-- Those uncommitted additions now include:
-  - official-evaluator LoFTR baseline support
-  - denser SuperPoint sparse-default refresh
-  - refreshed GTA / Paper7 sparse main-table rows under the new sparse default
-  - updated research handoff notes
-  - a paper-writing guide focused on the current method line
+- `RealDataDemo` was archived and published at `38002b4`; current work must not
+  continue on that branch unless the user explicitly reactivates it.
+- `codex/vop-experiment` was pushed through `06ff837` before starting the new
+  experiment line.
+- Current uncommitted work is the 2026-09-03 **calibrated multi-tile pose
+  likelihood** experiment infrastructure.
+- Detailed success/failure chronology is append-only in:
+  - `Process.md`
+- Current smoke status:
+  - standard-library unit tests: `6/6 passed`
+  - same-area train/test top-5×top-4 caches: `64/64` each, complete
+  - cache resume check: passed without duplicate records
+  - offline oracle: `Dis@1 = 20.21m`, `MA@20 = 60.94%`; provisional headroom
+    passed
+  - smoke calibration: failed ECE/risk-coverage gates; tiny-sample result only
+  - official evaluator calibrated-mode run: completed for 64 queries
+    (`Dis@1 = 48.12m`, `MA@20 = 35.94%`, `0.6989s/query`)
+- Next required stage:
+  - deterministic same-area pilot with 2,000 train and 345 test queries
+  - stop the line if the pre-registered oracle/calibration gates fail after the
+    single bounded HGB follow-up
+- New research question:
+  - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated
+    abstention recover tile-boundary/top-1 failures without increasing
+    catastrophic fine-localization corrections?
+- Hard boundary for this line:
+  - GTA-UAV only
+  - retrieval frozen
+  - Exp C VOP recipe frozen
+  - sparse matcher defaults frozen
+  - no yaw metadata
+  - no matcher-internal rewrite
 - Recent project capabilities already include:
   - supervision-diagnosis support in `train_vop.py`
   - GTA-UAV teacher-cache support in `build_vop_teacher.py`

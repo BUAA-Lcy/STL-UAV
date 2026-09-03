@@ -67,6 +67,9 @@ class Configuration:
     orientation_mode: str = "off"
     orientation_fusion_weight: float = 0.5
     orientation_topk: int = 1
+    fine_retrieval_topk: int = 1
+    fine_selection_mode: str = "legacy_inlier"
+    fine_calibrator_path: str = ""
     save_match_vis: bool = False
     match_vis_dir: str = ""
     match_vis_max_save: int = 200
@@ -171,6 +174,10 @@ def eval_script(config):
                 logger.info("VOP 权重路径: %s", config.orientation_checkpoint)
                 logger.info("VOP 融合权重: %.3f", config.orientation_fusion_weight)
                 logger.info("VOP top-k 假设数: %d", int(config.orientation_topk))
+                logger.info("细定位 retrieval tile 候选数: %d", int(config.fine_retrieval_topk))
+                logger.info("细定位候选选择模式: %s", config.fine_selection_mode)
+                if config.fine_selection_mode == "calibrated_likelihood":
+                    logger.info("位姿似然校准器: %s", config.fine_calibrator_path)
             logger.info("匹配可视化导出: %s", "开启" if config.save_match_vis else "关闭")
             if config.save_match_vis:
                 logger.info("匹配可视化目录: %s", config.match_vis_dir if str(config.match_vis_dir).strip() else "(默认 Log/visloc_sparse_final_matches)")
@@ -362,6 +369,9 @@ def eval_script(config):
             orientation_mode=config.orientation_mode,
             orientation_fusion_weight=config.orientation_fusion_weight,
             orientation_topk=config.orientation_topk,
+            fine_retrieval_topk=config.fine_retrieval_topk,
+            fine_selection_mode=config.fine_selection_mode,
+            fine_calibrator_path=config.fine_calibrator_path,
             save_match_vis=config.save_match_vis,
             match_vis_dir=config.match_vis_dir,
             match_vis_max_save=config.match_vis_max_save,
@@ -417,6 +427,9 @@ def parse_args():
     parser.add_argument('--orientation_mode', type=str, default='off', choices=('off', 'prior_single', 'prior_topk'), help='How to use the visual orientation posterior in GTA sparse fine localization')
     parser.add_argument('--orientation_fusion_weight', type=float, default=0.5, help='Reserved for API parity; not used by prior_* modes')
     parser.add_argument('--orientation_topk', type=int, default=1, help='Number of VOP angle hypotheses to evaluate when orientation_mode=prior_topk')
+    parser.add_argument('--fine_retrieval_topk', type=int, default=1, help='Number of retrieval-ranked satellite tiles considered by fine localization. Default keeps legacy top-1 behavior.')
+    parser.add_argument('--fine_selection_mode', type=str, default='legacy_inlier', choices=('legacy_inlier', 'calibrated_likelihood'), help='How multi-tile pose candidates are selected.')
+    parser.add_argument('--fine_calibrator_path', type=str, default='', help='Versioned JSON calibrator used by calibrated_likelihood mode.')
     parser.add_argument('--save_match_vis', action='store_true', help='Save sparse final match visualizations for each query')
     parser.add_argument('--match_vis_dir', type=str, default='', help='Directory for sparse final match visualizations')
     parser.add_argument('--match_vis_max_save', type=int, default=200, help='Maximum number of sparse final match visualizations to save')
@@ -486,6 +499,9 @@ if __name__ == '__main__':
     config.orientation_mode = args.orientation_mode
     config.orientation_fusion_weight = args.orientation_fusion_weight
     config.orientation_topk = max(1, int(args.orientation_topk))
+    config.fine_retrieval_topk = max(1, int(args.fine_retrieval_topk))
+    config.fine_selection_mode = str(args.fine_selection_mode)
+    config.fine_calibrator_path = str(args.fine_calibrator_path)
     config.save_match_vis = args.save_match_vis
     config.match_vis_dir = args.match_vis_dir
     config.match_vis_max_save = max(1, int(args.match_vis_max_save))

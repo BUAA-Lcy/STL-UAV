@@ -19,6 +19,11 @@ import os
 
 from ..matcher.gim_dkm import GimDKM
 from ..orientation import load_vop_checkpoint
+from .gta_pose_likelihood import (
+    PoseLikelihoodCalibrator,
+    evaluate_tile_hypotheses,
+    prefer_inlier_candidate,
+)
 
 
 def sdm(query_loc, sdmk_list, index, gallery_loc_xy_list, s=0.001):
@@ -314,6 +319,9 @@ def evaluate(
         orientation_mode="off",
         orientation_fusion_weight=0.5,
         orientation_topk=1,
+        fine_retrieval_topk=1,
+        fine_selection_mode="legacy_inlier",
+        fine_calibrator_path="",
         save_match_vis=False,
         match_vis_dir="",
         match_vis_max_save=200,
@@ -465,6 +473,29 @@ def evaluate(
         logger.info("VOP 已加载: %s", orientation_checkpoint)
     elif with_match and match_mode == "sparse" and orientation_mode_key != "off":
         logger.warning("VOP 模式=%s 但未提供有效的 orientation_checkpoint，自动退化为常规 sparse 匹配。", orientation_mode_key)
+
+    fine_selection_mode_key = str(fine_selection_mode).lower()
+    fine_retrieval_topk = max(1, int(fine_retrieval_topk))
+    pose_calibrator = None
+    if fine_selection_mode_key == "calibrated_likelihood":
+        if not use_orientation_model or orientation_mode_key != "prior_topk":
+            raise ValueError("calibrated_likelihood requires sparse prior_topk with a valid VOP checkpoint")
+        if not str(fine_calibrator_path).strip():
+            raise ValueError("calibrated_likelihood requires --fine_calibrator_path")
+        pose_calibrator = PoseLikelihoodCalibrator.load(fine_calibrator_path)
+        logger.info("多候选位姿校准器已加载: %s", fine_calibrator_path)
+    use_multitile_pose = bool(
+        use_orientation_model
+        and orientation_mode_key == "prior_topk"
+        and (fine_retrieval_topk > 1 or fine_selection_mode_key == "calibrated_likelihood")
+    )
+    pose_likelihood_stats = {
+        "query_count": 0,
+        "tile_sum": 0.0,
+        "hypothesis_sum": 0.0,
+        "confidence_sum": 0.0,
+        "abstain_count": 0,
+    }
 
     orientation_stats = {
         "count": 0,
@@ -640,6 +671,131 @@ def evaluate(
                 query_match_time = time.perf_counter() - t_match
                 orientation_stats["match_time_sum"] += query_match_time
                 hypotheses_evaluated = 1
+            elif use_multitile_pose:
+                max_tiles = min(int(fine_retrieval_topk), len(index))
+                top1_score = float(score[int(index[0])])
+                pose_candidates = []
+                total_vop_time = 0.0
+                total_pose_match_time = 0.0
+                tiles_evaluated = 0
+                selected_candidate = None
+                selected_confidence = 0.0
+                policy = {} if pose_calibrator is None else pose_calibrator.policy
+                orientation_k = max(1, int(policy.get("orientation_topk", orientation_topk)))
+
+                for retrieval_position in range(max_tiles):
+                    gallery_index = int(index[retrieval_position])
+                    if gallery_index in gallery_img_cache:
+                        candidate_gallery_img = gallery_img_cache.pop(gallery_index)
+                        gallery_img_cache[gallery_index] = candidate_gallery_img
+                    else:
+                        candidate_gallery_img = gallery_loader.dataset[gallery_index]
+                        gallery_img_cache[gallery_index] = candidate_gallery_img
+                        if len(gallery_img_cache) > gallery_img_cache_size:
+                            gallery_img_cache.popitem(last=False)
+                    next_position = min(retrieval_position + 1, len(index) - 1)
+                    next_score = float(score[int(index[next_position])])
+                    tile_candidates, tile_timing = evaluate_tile_hypotheses(
+                        retrieval_model=model,
+                        orientation_model=orientation_model,
+                        matcher=matcher,
+                        query_img=query_img,
+                        gallery_img=candidate_gallery_img,
+                        gallery_center_xy=gallery_center_loc_xy_list[gallery_index],
+                        gallery_topleft_xy=gallery_topleft_loc_xy_list[gallery_index],
+                        gallery_index=gallery_index,
+                        gallery_name=gallery_list[gallery_index],
+                        retrieval_rank=retrieval_position + 1,
+                        retrieval_score=float(score[gallery_index]),
+                        retrieval_top1_score=top1_score,
+                        retrieval_next_score=next_score,
+                        orientation_topk=orientation_k,
+                        device=config.device,
+                        case_prefix=query_case_prefix,
+                    )
+                    pose_candidates.extend(tile_candidates)
+                    total_vop_time += float(tile_timing["vop_time_s"])
+                    total_pose_match_time += float(tile_timing["match_time_s"])
+                    tiles_evaluated = retrieval_position + 1
+
+                    if pose_calibrator is not None and tiles_evaluated in (1, 3) and tiles_evaluated < max_tiles:
+                        selected_candidate, selected_confidence = pose_calibrator.best_candidate(pose_candidates)
+                        stage_threshold = float(policy.get(f"threshold_r{tiles_evaluated}", 1.1))
+                        if selected_confidence >= stage_threshold:
+                            break
+
+                if pose_calibrator is not None:
+                    selected_candidate, selected_confidence = pose_calibrator.best_candidate(pose_candidates)
+                else:
+                    for candidate in pose_candidates:
+                        if prefer_inlier_candidate(candidate, selected_candidate):
+                            selected_candidate = candidate
+                    selected_confidence = 0.0
+
+                abstain = selected_candidate is None
+                if pose_calibrator is not None and selected_confidence < float(policy.get("abstain_threshold", 0.0)):
+                    abstain = True
+                if selected_candidate is not None and bool(selected_candidate.get("fallback_to_center", False)):
+                    abstain = True
+
+                if abstain:
+                    match_loc = gallery_center_loc_xy_list[top1_index]
+                    match_info = {
+                        "n_kept": 0 if selected_candidate is None else int(selected_candidate.get("retained_matches", 0)),
+                        "inliers": 0 if selected_candidate is None else int(selected_candidate.get("inliers", 0)),
+                        "inlier_ratio": 0.0 if selected_candidate is None else float(selected_candidate.get("inlier_ratio", 0.0)),
+                        "identity_h_fallback": True,
+                        "fallback_to_center": True,
+                        "fallback_reason": "calibrated_abstain",
+                        "out_of_bounds": False,
+                        "projection_invalid": False,
+                    }
+                else:
+                    match_loc = tuple(float(value) for value in selected_candidate["predicted_xy"])
+                    match_info = {
+                        "n_kept": int(selected_candidate.get("retained_matches", 0)),
+                        "inliers": int(selected_candidate.get("inliers", 0)),
+                        "inlier_ratio": float(selected_candidate.get("inlier_ratio", 0.0)),
+                        "identity_h_fallback": bool(selected_candidate.get("identity_h_fallback", False)),
+                        "fallback_to_center": False,
+                        "fallback_reason": selected_candidate.get("fallback_reason"),
+                        "out_of_bounds": bool(selected_candidate.get("out_of_bounds", False)),
+                        "projection_invalid": bool(selected_candidate.get("projection_invalid", False)),
+                    }
+
+                if selected_candidate is not None:
+                    if pose_calibrator is not None:
+                        likelihood_values = pose_calibrator.predict_candidates(pose_candidates)
+                        likelihood_sum = float(np.sum(likelihood_values))
+                        normalized_likelihood = (
+                            likelihood_values / likelihood_sum
+                            if likelihood_sum > 1e-12
+                            else np.full_like(likelihood_values, 1.0 / max(len(likelihood_values), 1))
+                        )
+                        selected_pose_index = pose_candidates.index(selected_candidate)
+                        match_info["pose_likelihood"] = float(normalized_likelihood[selected_pose_index])
+                    match_info["selected_gallery_index"] = int(selected_candidate["gallery_index"])
+                    match_info["selected_retrieval_rank"] = int(selected_candidate["retrieval_rank"])
+                    match_info["selected_angle_deg"] = float(selected_candidate["angle_deg"])
+                    selected_features = selected_candidate.get("features", {})
+                    orientation_posterior = {
+                        "top_prob": float(selected_features.get("vop_top_prob", 0.0)),
+                        "entropy": float(selected_features.get("vop_entropy", 0.0)),
+                        "concentration": float(selected_features.get("vop_concentration", 0.0)),
+                    }
+                else:
+                    orientation_posterior = {"top_prob": 0.0, "entropy": 0.0, "concentration": 0.0}
+
+                query_vop_time = float(total_vop_time)
+                query_match_time = float(total_pose_match_time)
+                orientation_stats["time_sum"] += query_vop_time
+                orientation_stats["match_time_sum"] += query_match_time
+                hypotheses_evaluated = len(pose_candidates)
+                pose_likelihood_stats["query_count"] += 1
+                pose_likelihood_stats["tile_sum"] += float(tiles_evaluated)
+                pose_likelihood_stats["hypothesis_sum"] += float(len(pose_candidates))
+                pose_likelihood_stats["confidence_sum"] += float(selected_confidence)
+                pose_likelihood_stats["abstain_count"] += int(abstain)
             elif use_orientation_model and orientation_mode_key == "prior_topk":
                 candidate_angles = getattr(orientation_model, "candidate_angles_deg", None) or [0.0]
                 topk = max(1, min(int(orientation_topk), len(candidate_angles)))
@@ -988,6 +1144,19 @@ def evaluate(
             float(orientation_stats["time_sum"]) / float(orientation_count),
             float(orientation_stats["match_time_sum"]) / float(orientation_count),
             float(orientation_stats["time_sum"] + orientation_stats["match_time_sum"]) / float(orientation_count),
+        )
+    if pose_likelihood_stats["query_count"] > 0:
+        pose_count = max(int(pose_likelihood_stats["query_count"]), 1)
+        abstain_count, abstain_ratio = _format_count_ratio(pose_likelihood_stats["abstain_count"], pose_count)
+        logger.info(
+            "多候选位姿似然摘要: mode=%s queries=%d mean_tiles=%.2f mean_hypotheses=%.2f mean_confidence=%.4f abstain=%d(%.2f%%)",
+            fine_selection_mode_key,
+            pose_count,
+            float(pose_likelihood_stats["tile_sum"]) / float(pose_count),
+            float(pose_likelihood_stats["hypothesis_sum"]) / float(pose_count),
+            float(pose_likelihood_stats["confidence_sum"]) / float(pose_count),
+            abstain_count,
+            abstain_ratio,
         )
     logger.debug(
         "评估耗时统计 查询特征提取=%.6fs 图库推理=%.6fs 分数拼接=%.6fs 指标计算=%.6fs 查询数=%d 图库数=%d",
