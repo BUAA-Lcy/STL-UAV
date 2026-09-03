@@ -841,3 +841,14 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
 - Recent logs show continued progress without an exception. Final integrity
   auditing remains pending until cache generation finishes.
 - Decision: `KEEP` (continue unchanged; no user action required).
+
+### Full same-area train cache — 13,000-query milestone
+
+- At 2026-09-04 07:51 CST the cache contained 13,418/13,851 written rows,
+  leaving 433 queries to generate at inspection time.
+- The original durable process (`53993`) remains active/running; the resumed
+  log continued through 13,375 new queries at approximately `24149.3s`.
+- Recent output shows continued progress without an exception. No fitting,
+  interim aggregate evaluation, restart or configuration change occurred.
+- Final integrity checks and fixed-family train-only fitting remain pending.
+- Decision: `KEEP` (continue unchanged; no user action required).
