@@ -768,3 +768,13 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   scientific protocol remain unchanged; fitting and final integrity checks
   await completion of the cache.
 - Decision: `KEEP` (continue unchanged; no user action required).
+
+### Full same-area train cache — 6,000-query milestone
+
+- At 2026-09-04 04:15 CST the cache contained 6,228/13,851 written rows.
+- The original durable process (`53993`) remains active/running. The resumed
+  log crossed 6,000 new queries at `10831.6s` and continued through 6,200.
+- Recent logs show continued progress without an exception; no configuration
+  change, interim aggregate evaluation or fitting was performed. Full cache
+  integrity will be audited once generation finishes.
+- Decision: `KEEP` (continue unchanged; no user action required).
