@@ -2,7 +2,8 @@
 
 ## Decision
 
-`REJECT`
+Initial pilot: `REJECT` under the heuristic 70%/15% rule.
+Statistical and frozen full-test follow-up: `KEEP`.
 
 The bounded multi-tile candidate pool has substantial oracle headroom, but the
 pre-registered reliability gate was not met after the single allowed nonlinear
@@ -61,8 +62,29 @@ The result separates candidate generation from candidate selection:
    improvement at the specified 70% coverage is insufficient under the locked
    decision rule.
 
-No full 13,851/3,443 cache, same-area headline rerun, or cross-area experiment
-should be launched from this result without a new user-approved plan.
+The user re-opened the line after questioning the heuristic single-point gate.
+A 10,000-replicate paired bootstrap and tie-aware AURC audit supported the
+direction of improvement, so a frozen-calibrator full 3,443-query test cache
+was completed.
+
+## Frozen Full-Test Follow-up
+
+| Cohort | Variant | Dis@1 (m) | MA@20 (%) | Worse than coarse (%) | Catastrophic +50m (%) |
+|---|---|---:|---:|---:|---:|
+| Full 3,443 | Legacy top-1 VOP | 58.16 | 46.09 | 11.88 | 3.19 |
+| Full 3,443 | Adaptive calibrated | 48.99 | 49.75 | 6.62 | 0.90 |
+| Non-pilot 3,098 | Legacy top-1 VOP | 54.74 | 46.71 | 11.59 | 2.97 |
+| Non-pilot 3,098 | Adaptive calibrated | 45.90 | 50.26 | 6.52 | 0.90 |
+
+On the primary 3,098-query holdout, paired bootstrap gives `8.84m`
+Dis@1 improvement (95% CI `[7.12,10.64]`), `+3.55pp` MA@20 (95% CI
+`[2.58,4.55]`), and `2.07pp` catastrophic-rate reduction (95% CI
+`[1.45,2.71]`). Tie-aware AURC improves by `9.77m` (95% CI
+`[7.63,12.41]`).
+
+The full same-area thresholds are therefore met by the frozen 2,000-query
+calibrator. The next active stage is generating the complete 13,851-query
+train cache and fitting a final train-only calibrator.
 
 ## Artifacts
 

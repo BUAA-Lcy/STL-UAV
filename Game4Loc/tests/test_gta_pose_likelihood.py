@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from build_gta_pose_hypothesis_cache import _read_completed, _stratified_indices
 from fit_gta_pose_likelihood import risk70
-from audit_gta_pose_likelihood_statistics import tie_aware_risk
+from audit_gta_pose_likelihood_statistics import exclude_queries, tie_aware_risk
 from game4loc.evaluate.gta_pose_likelihood import (
     CALIBRATOR_SCHEMA_VERSION,
     FEATURE_NAMES,
@@ -151,6 +151,10 @@ class GTAPoseLikelihoodTests(unittest.TestCase):
         second = tie_aware_risk(confidence, np.asarray([100.0, 0.0, 30.0]), coverage=1.0 / 3.0)
         self.assertEqual(first, 50.0)
         self.assertEqual(second, 50.0)
+
+    def test_statistical_audit_excludes_pilot_queries_by_name(self):
+        records = [{"query_name": "a"}, {"query_name": "b"}, {"query_name": "c"}]
+        self.assertEqual(exclude_queries(records, [{"query_name": "b"}]), [records[0], records[2]])
 
 
 if __name__ == "__main__":

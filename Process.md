@@ -555,3 +555,112 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   --output_path ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_test3443_frozen2000.jsonl \
   --overwrite
 ```
+
+### Frozen-calibrator full-test progress — 500/3,443
+
+- Candidate generation reached 500/3,443 queries in the original process.
+- Candidate-stage elapsed time: approximately `942.8s`.
+- Existing AMP/albumentations warnings only; no crash, malformed record or
+  manual exclusion.
+- Long-tail queries, including coarse errors above 500m and cases where every
+  fine candidate is worse than coarse, remain in the cache.
+- Decision: `KEEP` (continue unchanged).
+
+### Frozen-calibrator full-test progress — 1,000/3,443
+
+- Original process reached 1,000/3,443 queries.
+- Candidate-stage elapsed time: approximately `1868.4s`.
+- Cache remains resumable and no configuration changed.
+- Decision: `KEEP` (continue unchanged).
+
+### Frozen-calibrator full-test progress — halfway
+
+- Original process reached 1,725/3,443 queries.
+- Candidate-stage elapsed time: approximately `3230.5s`.
+- No interim metric/gate calculation was performed on the growing cache.
+- Decision: `KEEP` (continue unchanged).
+
+### Frozen-calibrator full-test progress — 2,000/3,443
+
+- Original process reached 2,000/3,443 queries after crossing midnight into
+  2026-09-04 local time.
+- Candidate-stage elapsed time: approximately `3746.5s`.
+- No restart, interim selection or configuration change.
+- Decision: `KEEP` (continue unchanged).
+
+### Frozen-calibrator full-test progress — 2,500/3,443
+
+- Original process reached 2,500/3,443 queries.
+- Candidate-stage elapsed time: approximately `4677.1s`.
+- No interruption or configuration change.
+- Decision: `KEEP` (continue unchanged).
+
+### Frozen-calibrator full-test progress — 3,000/3,443
+
+- Original process reached 3,000/3,443 queries.
+- Candidate-stage elapsed time: approximately `5599.4s`.
+- No interruption, filtering or configuration change.
+- Decision: `KEEP` (continue unchanged).
+
+### Frozen-calibrator full-test completion and confirmatory result
+
+- Cache generation completed in the original process:
+  - 3,443 records / 3,443 unique queries;
+  - exactly 20 candidates/query;
+  - all candidate feature values finite;
+  - candidate-stage elapsed time approximately `6385.9s`;
+  - manifest fingerprint:
+    `418d7d64630c26acb02e547667d3654b1c550cd754395756e29dc71fc5d130f2`.
+- Full 3,443-query matched offline results:
+  - legacy top-1 VOP: `Dis@1 = 58.16m`, `MA@20 = 46.09%`,
+    worse-than-coarse `11.88%`, catastrophic `3.19%`;
+  - raw top-5×top-4: `139.41m`, `48.56%`, `16.82%`, `8.86%`;
+  - oracle top-5×top-4: `23.04m`, `67.76%`;
+  - frozen adaptive: `48.99m`, `49.75%`, `6.62%`, `0.90%`;
+  - mean adaptive hypotheses: `7.37/query`.
+- Full paired bootstrap:
+  - Dis@1 improvement `9.17m`, 95% CI `[7.55,10.84]`;
+  - MA@20 improvement `3.66pp`, 95% CI `[2.73,4.59]`;
+  - catastrophic reduction `2.29pp`, 95% CI `[1.71,2.90]`;
+  - AURC improvement `10.13m`, 95% CI `[7.96,12.81]`.
+- Primary non-pilot holdout (3,098 queries):
+  - legacy: `Dis@1 = 54.74m`, `MA@20 = 46.71%`, catastrophic `2.97%`;
+  - adaptive: `45.90m`, `MA@20 = 50.26%`, catastrophic `0.90%`;
+  - Dis@1 improvement `8.84m`, 95% CI `[7.12,10.64]`;
+  - MA@20 improvement `3.55pp`, 95% CI `[2.58,4.55]`;
+  - catastrophic reduction `2.07pp`, 95% CI `[1.45,2.71]`;
+  - AURC improvement `9.77m`, 95% CI `[7.63,12.41]`.
+- The 90%-coverage holdout point has an interval crossing zero, but the
+  pre-registered full-curve AURC interval is strictly positive.
+- Original full same-area gates are met by the frozen 2,000-query calibrator:
+  - Dis@1 relative reduction `15.76%` (required ≥5%);
+  - adaptive Dis@1 `48.99m` (target ≤54.75m);
+  - MA@20 increase `3.66pp` (required ≥2pp);
+  - adaptive MA@20 `49.75%` (target ≥47.92%);
+  - worse-than-coarse and catastrophic rates both decrease.
+- Decision: `KEEP`.
+
+### Full same-area train cache — start
+
+- Next stage: generate all 13,851 same-area train queries at top-5×top-4.
+- The retrieval checkpoint, full-teacher Exp C VOP and matcher remain frozen.
+- After completion, fit the final calibrator only on this train cache; the full
+  test cache will not participate in fitting or policy selection.
+- Output:
+  - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.jsonl`
+- Exact command:
+
+```bash
+cd /home/lcy/Workplace/GTA-UAV/Game4Loc
+WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
+  build_gta_pose_hypothesis_cache.py \
+  --data_root ./data/GTA-UAV-data \
+  --pairs_meta_file same-area-drone2sate-train.json \
+  --checkpoint_start ./pretrained/gta/vit_base_eva_gta_same_area.pth \
+  --orientation_checkpoint ./work_dir/gta_vop_same_area_runs/gta_samearea_fullteacher_exp_c_20260417_125519/artifacts/gta_samearea_useful5_weight30_e6.pth \
+  --retrieval_topk 5 --orientation_topk 4 \
+  --query_limit 0 --sample_mode sequential --sample_seed 20260903 \
+  --batch_size 64 --num_workers 0 \
+  --output_path ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.jsonl \
+  --overwrite
+```

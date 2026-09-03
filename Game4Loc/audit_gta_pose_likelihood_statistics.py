@@ -18,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval_cache", required=True)
     parser.add_argument("--calibrator_path", required=True)
     parser.add_argument("--summary_path", required=True)
+    parser.add_argument("--exclude_query_cache", default="")
     parser.add_argument("--bootstrap_replicates", type=int, default=10_000)
     parser.add_argument("--seed", type=int, default=20260903)
     return parser.parse_args()
@@ -64,6 +65,11 @@ def percentile_interval(values: np.ndarray) -> Tuple[float, float]:
     return float(low), float(high)
 
 
+def exclude_queries(records: Sequence[Mapping], excluded_records: Sequence[Mapping]) -> list[Mapping]:
+    excluded_names = {str(record["query_name"]) for record in excluded_records}
+    return [record for record in records if str(record["query_name"]) not in excluded_names]
+
+
 def query_rows(records: Sequence[Mapping], calibrator: PoseLikelihoodCalibrator) -> Dict[str, np.ndarray]:
     policy = calibrator.policy
     orientation_topk = int(policy.get("orientation_topk", 4))
@@ -75,6 +81,7 @@ def query_rows(records: Sequence[Mapping], calibrator: PoseLikelihoodCalibrator)
         "full_calibrated_confidence": [],
         "raw_error": [],
         "raw_confidence": [],
+        "oracle_error": [],
         "adaptive_hypotheses": [],
     }
     for record in records:
@@ -104,8 +111,24 @@ def query_rows(records: Sequence[Mapping], calibrator: PoseLikelihoodCalibrator)
         result["full_calibrated_confidence"].append(float(full_confidence))
         result["raw_error"].append(float(raw["error_m"]))
         result["raw_confidence"].append(float(raw.get("inliers", 0)))
+        result["oracle_error"].append(float(min(candidate["error_m"] for candidate in candidate_pool(record, 5, 4))))
         result["adaptive_hypotheses"].append(float(stage * orientation_topk))
     return {name: np.asarray(values, dtype=np.float64) for name, values in result.items()}
+
+
+def absolute_metrics(errors: np.ndarray, coarse: np.ndarray) -> Dict[str, float]:
+    errors = np.asarray(errors, dtype=np.float64)
+    coarse = np.asarray(coarse, dtype=np.float64)
+    return {
+        "Dis@1_m": float(np.mean(errors)),
+        "median_m": float(np.median(errors)),
+        "MA@3_pct": float(100.0 * np.mean(errors < 3.0)),
+        "MA@5_pct": float(100.0 * np.mean(errors < 5.0)),
+        "MA@10_pct": float(100.0 * np.mean(errors < 10.0)),
+        "MA@20_pct": float(100.0 * np.mean(errors < 20.0)),
+        "worse_than_coarse_pct": float(100.0 * np.mean(errors > coarse + 1e-6)),
+        "catastrophic_50m_pct": float(100.0 * np.mean(errors > coarse + 50.0)),
+    }
 
 
 def effect_summary(rows: Mapping[str, np.ndarray], bootstrap_indices: np.ndarray) -> Dict[str, dict]:
@@ -205,6 +228,7 @@ def selective_summary(
 
 
 def write_markdown(path: Path, summary: Mapping) -> None:
+    strategies = summary["strategies"]
     effects = summary["paired_effects"]
     selective = summary["selective_risk"]
     auc = summary["AURC"]["summary"]
@@ -216,11 +240,25 @@ def write_markdown(path: Path, summary: Mapping) -> None:
         f"- Bootstrap replicates: {summary['bootstrap']['replicates']}",
         f"- Seed: `{summary['bootstrap']['seed']}`",
         "",
+        "## Absolute Strategy Metrics",
+        "",
+        "| Strategy | Dis@1 (m) | MA@20 (%) | Worse than coarse (%) | Catastrophic +50m (%) |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    for name, row in strategies.items():
+        lines.append(
+            f"| {name} | {row['Dis@1_m']:.3f} | {row['MA@20_pct']:.3f} | "
+            f"{row['worse_than_coarse_pct']:.3f} | {row['catastrophic_50m_pct']:.3f} |"
+        )
+    lines.extend(
+        [
+        "",
         "## Paired Adaptive-vs-Legacy Effects",
         "",
         "| Effect (positive favors adaptive) | Estimate | 95% CI |",
         "|---|---:|---:|",
-    ]
+        ]
+    )
     for name, row in effects.items():
         lines.append(f"| {name} | {row['estimate']:.4f} | [{row['ci95'][0]:.4f}, {row['ci95'][1]:.4f}] |")
     lines.extend(["", "## Tie-aware Selective Risk", "", "| Coverage | Calibrated (m) | Raw inlier (m) | Improvement (m) | 95% CI (m) |", "|---:|---:|---:|---:|---:|"])
@@ -251,7 +289,11 @@ def write_markdown(path: Path, summary: Mapping) -> None:
 
 def main() -> None:
     args = parse_args()
-    records = load_jsonl(args.eval_cache)
+    all_records = load_jsonl(args.eval_cache)
+    excluded_records = load_jsonl(args.exclude_query_cache) if str(args.exclude_query_cache).strip() else []
+    records = exclude_queries(all_records, excluded_records)
+    if not records:
+        raise ValueError("No evaluation records remain after query exclusion")
     calibrator = PoseLikelihoodCalibrator.load(args.calibrator_path)
     rows = query_rows(records, calibrator)
     rng = np.random.default_rng(int(args.seed))
@@ -277,10 +319,22 @@ def main() -> None:
         "inputs": {
             "eval_cache": str(Path(args.eval_cache).resolve()),
             "calibrator_path": str(Path(args.calibrator_path).resolve()),
+            "exclude_query_cache": (
+                str(Path(args.exclude_query_cache).resolve()) if str(args.exclude_query_cache).strip() else ""
+            ),
         },
+        "source_query_count": len(all_records),
+        "excluded_query_count": len(all_records) - len(records),
         "query_count": len(records),
         "bootstrap": {"replicates": int(args.bootstrap_replicates), "seed": int(args.seed), "ci": "percentile_95"},
         "tie_policy": "fractional expected error within equal-confidence groups",
+        "strategies": {
+            "coarse_top1": absolute_metrics(rows["coarse_error"], rows["coarse_error"]),
+            "legacy_top1_vop": absolute_metrics(rows["legacy_error"], rows["coarse_error"]),
+            "raw_top5x4": absolute_metrics(rows["raw_error"], rows["coarse_error"]),
+            "oracle_top5x4": absolute_metrics(rows["oracle_error"], rows["coarse_error"]),
+            "adaptive_calibrated": absolute_metrics(rows["adaptive_error"], rows["coarse_error"]),
+        },
         "paired_effects": effects,
         "selective_risk": selective,
         "AURC": auc,

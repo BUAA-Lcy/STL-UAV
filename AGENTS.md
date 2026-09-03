@@ -98,9 +98,18 @@ As of this handoff:
   - tie-aware AURC improvement: `9.86m`, 95% CI `[3.41,19.29]`
 - The active GPU follow-up is the complete 3,443-query same-area test cache
   with the 2,000-query calibrator frozen.
+  - completed: 3,443/3,443, 20 candidates/query, all features finite
   - report all 3,443 for protocol completeness
   - treat the 3,098 queries outside the pilot subset as the primary
     confirmatory holdout
+- Frozen-calibrator full-test result: `KEEP`.
+  - all 3,443: legacy `58.16m/46.09%`, adaptive `48.99m/49.75%`
+  - non-pilot 3,098: legacy `54.74m/46.71%`, adaptive `45.90m/50.26%`
+  - worse-than-coarse and catastrophic correction rates decrease on full test
+  - original full same-area Dis@1/MA@20/robustness gates all pass
+- Active next stage:
+  - full 13,851-query same-area train cache at top-5×top-4
+  - then refit the final calibrator using train only
 - New research question:
   - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated
     abstention recover tile-boundary/top-1 failures without increasing
