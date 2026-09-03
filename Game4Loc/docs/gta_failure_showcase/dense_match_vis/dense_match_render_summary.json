@@ -1,0 +1,20 @@
+[
+  {
+    "query": "500_0001_0000023471.png",
+    "gallery": "4_0_3_12.png",
+    "mode": "dense DKM, no rotate",
+    "retained": 4971,
+    "inliers": 4962,
+    "inlier_ratio": 0.9981894990947495,
+    "image": "500_0001_0000023471_dense_dkm.png"
+  },
+  {
+    "query": "500_0001_0000023072.png",
+    "gallery": "5_0_5_22.png",
+    "mode": "dense DKM, no rotate",
+    "retained": 4990,
+    "inliers": 4980,
+    "inlier_ratio": 0.9979959919839679,
+    "image": "500_0001_0000023072_dense_dkm.png"
+  }
+]

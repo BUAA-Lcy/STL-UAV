@@ -1,0 +1,30 @@
+[
+  {
+    "query": "500_0001_0000023471.png",
+    "gallery": "4_0_3_12.png",
+    "top4_angles": [
+      20.0,
+      30.0,
+      10.0,
+      40.0
+    ],
+    "selected_angle": 30.0,
+    "inliers": 145,
+    "retained": 312,
+    "final_vis_path": "docs/gta_failure_showcase/match_vis/00001_500_0001_0000023471_selected_30_final_phase1.png"
+  },
+  {
+    "query": "500_0001_0000023072.png",
+    "gallery": "5_0_5_22.png",
+    "top4_angles": [
+      0.0,
+      10.0,
+      20.0,
+      30.0
+    ],
+    "selected_angle": 30.0,
+    "inliers": 120,
+    "retained": 203,
+    "final_vis_path": "docs/gta_failure_showcase/match_vis/00002_500_0001_0000023072_selected_30_final_phase1.png"
+  }
+]
