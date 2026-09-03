@@ -799,3 +799,13 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   evaluation, fitting, restart or configuration change occurred in this check.
 - Integrity checks and final train-only HGB fitting await cache completion.
 - Decision: `KEEP` (continue unchanged; no user action required).
+
+### Full same-area train cache — 9,000-query milestone
+
+- At 2026-09-04 05:48 CST the cache contained 9,259/13,851 written rows.
+- The original durable process (`53993`) remains active/running. The resumed
+  log crossed 9,000 new queries at `16342.0s` and continued through 9,225.
+- Recent output shows progress without an exception. No fitting, interim
+  aggregate evaluation, restart or protocol change occurred in this check.
+- Full integrity checks remain pending until generation completes.
+- Decision: `KEEP` (continue unchanged; no user action required).
