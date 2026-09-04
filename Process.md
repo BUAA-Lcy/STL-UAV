@@ -1042,3 +1042,51 @@ systemd-run --user --unit=codex-gta-official-full-20260904 --collect \
 
 - `NEEDS ONE FOLLOW-UP`: complete the already-queued matched rows and repair
   reporting-source resolution; no new model experiment or refit.
+
+### 2026-09-04 10:49 CST — official raw expansion completed
+
+#### Experiment Name
+
+- Full same-area raw multi-tile inlier-selection baseline.
+
+#### Change Compared to Baseline
+
+- Increase retrieved tiles from one to five, retaining four VOP angles per
+  tile; use legacy inlier selection without learned calibration. Retrieval,
+  VOP, sparse matcher defaults and official fallback semantics remain fixed.
+
+#### Quantitative Results
+
+- Completed at 10:29:48 CST; detailed source:
+  `Game4Loc/Log/vit_base_patch16_rope_reg1_gap_256_sbb_in1k_eval_GTA-UAV_same_match_on_20260904_0902.log`.
+- Verified 3,443 unique audit queries, identical query cohort and exactly
+  identical per-query coarse errors to the official legacy run. Audit mean
+  error agrees with official rounded Dis@1.
+- Recall@1/5/10 `91.1124/99.3901/99.5353%`, mAP `94.8114%`;
+  Dis@1/3/5 `73.8959/165.2348/216.9398m`.
+- MA@3/5/10/20 `4.2695/10.1946/25.5010/49.8693%`.
+- Fallback `206/3443`, worse-than-coarse `441/3443` (`12.8086%`),
+  identity-H `206`, out-of-bounds `0`, invalid projection `0`,
+  catastrophic +50m `198/3443` (`5.7508%`).
+- Mean retained matches/inliers/ratio `237.96/88.40/0.3391`;
+  mean hypotheses `20`, mean tiles `5`.
+- VOP `0.180886s`, matcher `1.153907s`, sum `1.334793s/query`;
+  overall evaluator `5234.727339s`. Fine timers are not end-to-end latency.
+
+#### Interpretation
+
+- Compared with matched official legacy, MA@20 rises by `3.3111pp`, but
+  mean error worsens by `16.9060m` and catastrophes rise from `88` to `198`.
+  Expanding candidates with inlier selection alone is not an overall win.
+- Do not substitute the much worse cached raw result for this official row:
+  non-top1 fallback centers are mapped to coarse top1 by the official path.
+  That known semantic difference prevents interpreting the cached/official
+  gap as a method improvement or attributing its full magnitude to one cause.
+- Adaptive evaluation started at 10:29:48 CST and is healthy (about 58% at
+  this check). The calibrator and tracked Python sources remain unchanged.
+  Log-source summarization repair stays deferred until all rows finish.
+
+#### Decision
+
+- `REJECT` for uncalibrated raw expansion as the main method. This does not
+  decide the still-running calibrated adaptive experiment.

@@ -129,12 +129,17 @@ As of this handoff:
   - official unit: `codex-gta-official-full-20260904.service`; logs under
     `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/`
   - official runner launched 2026-09-04 08:41 CST from `4cb181e`, PID `76644`;
-    legacy row completed at 09:02 CST; raw is running and adaptive is queued
+    legacy row completed at 09:02 CST, raw at 10:29 CST; adaptive is running
+  - official raw top-5x4 audit verified 3,443 unique queries and identical
+    coarse errors to legacy: Dis@1 `73.8959m`, MA@20 `49.8693%`,
+    worse-than-coarse `12.8086%`, catastrophe `5.7508%`,
+    VOP+matcher `1.334793s/query`. Raw expansion alone is `REJECT`:
+    MA@20 improves but mean error, catastrophic corrections and cost increase.
   - official legacy audit verified 3,443 unique queries: Dis@1 `56.9898m`,
     MA@20 `46.5582%`, worse-than-coarse `12.0825%`, catastrophe `2.5559%`,
     VOP+matcher `0.260941s/query`; use this matched row, not cached legacy
   - reporting issue discovered before completion: stdout variant logs omit
-    DEBUG `FineAudit` records; the detailed app logs contain them (legacy
+    DEBUG `FineAudit` records; the detailed app logs contain them (legacy/raw
     verified complete). After all three evaluator rows finish, repair only
     the summarizer's log-source resolution using the explicit app-log path
     printed in stdout, add regression tests and rerun summarization only.
