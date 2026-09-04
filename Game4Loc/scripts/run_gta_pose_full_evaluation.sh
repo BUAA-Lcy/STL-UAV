@@ -22,10 +22,14 @@ common=(
 )
 snapshot="$(git rev-parse HEAD)"
 code_fingerprint="$(git ls-files -z -- '*.py' | xargs -0 sha256sum | sha256sum)"
+calibrator_fingerprint="$(sha256sum "$calibrator")"
 echo "Official full same-area evaluation snapshot=$snapshot"
 echo "Tracked Python code fingerprint=$code_fingerprint"
 sha256sum "$calibrator"
 for variant in legacy_top1 raw_top5x4 adaptive_calibrated; do
+  test "$(sha256sum "$calibrator")" = "$calibrator_fingerprint" || {
+    echo "Calibrator changed during matched evaluation" >&2; exit 1
+  }
   test "$(git ls-files -z -- '*.py' | xargs -0 sha256sum | sha256sum)" = "$code_fingerprint" || {
     echo "Python code changed during matched evaluation; aborting before $variant" >&2
     exit 1
@@ -41,4 +45,6 @@ for variant in legacy_top1 raw_top5x4 adaptive_calibrated; do
   "$task_python" -u eval_gta.py "${common[@]}" "${extra[@]}" > "$log" 2>&1
   echo "DONE $variant $(date -Is)"
 done
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+  "$task_python" summarize_gta_pose_official.py --run_dir "$run_dir"
 echo "ALL_OFFICIAL_RUNS_COMPLETE $(date -Is)"

@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from build_gta_pose_hypothesis_cache import _read_completed, _stratified_indices
 from fit_gta_pose_likelihood import risk70
 from audit_gta_pose_likelihood_statistics import exclude_queries, tie_aware_risk
+from summarize_gta_pose_official import parse_audit
 from game4loc.evaluate.gta_pose_likelihood import (
     CALIBRATOR_SCHEMA_VERSION,
     FEATURE_NAMES,
@@ -155,6 +156,17 @@ class GTAPoseLikelihoodTests(unittest.TestCase):
     def test_statistical_audit_excludes_pilot_queries_by_name(self):
         records = [{"query_name": "a"}, {"query_name": "b"}, {"query_name": "c"}]
         self.assertEqual(exclude_queries(records, [{"query_name": "b"}]), [records[0], records[2]])
+
+    def test_official_audit_log_preserves_precise_error(self):
+        line = 'FineAudit query=a.png coarse_m=20.0000000000 final_m=70.0000000001 fallback=0 hypotheses=4 vop_s=0.01 matcher_s=0.20'
+        row = parse_audit(line)['a.png']
+        self.assertGreater(row['final'], row['coarse'] + 50)
+        self.assertEqual(row['hypotheses'], 4)
+
+    def test_official_audit_rejects_duplicate_queries(self):
+        line = 'FineAudit query=a.png coarse_m=20 final_m=30 fallback=0 hypotheses=4 vop_s=0.01 matcher_s=0.20'
+        with self.assertRaisesRegex(ValueError, 'Duplicate'):
+            parse_audit(line + '\n' + line)
 
 
 if __name__ == "__main__":
