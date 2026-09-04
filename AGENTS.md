@@ -31,6 +31,36 @@ The current working diagnosis is:
 
 # 2. Current Handoff Status
 
+Authoritative latest status (2026-09-04, after the historical stages below):
+
+- Final matched official same-area experiment: `KEEP`. All three rows have
+  3,443 unique queries and exactly matching coarse errors; official Dis@1
+  agrees with high-precision per-query audit means.
+- Legacy: `56.9898m / MA@20 46.5582%`; calibrated adaptive:
+  `48.8255m / 48.6494%`. Error reduction `14.33%`, MA@20 gain `2.0912pp`.
+- Catastrophic corrections: `88 -> 24`; worse-than-coarse: `416 -> 200`.
+  Fallback: `330 -> 537`; VOP+matcher time: `0.260941 -> 0.452635s/query`.
+  The method improves robustness at increased cost and reduced acceptance.
+- Paired 10,000-query bootstrap: error reduction CI `[5.841,11.137]m`,
+  MA@20 gain CI `[0.958,3.253]pp`; the MA gain CI is not wholly above 2pp.
+  All four full-stage point-estimate gates pass. Spatial correlation and
+  training variability are not captured by these query-bootstrap intervals.
+- Raw expansion alone: `REJECT` as the main method (`73.8959m`, 198
+  catastrophes); retain as an ablation, not a discarded failed run.
+- All inference ran from `4cb181e` with frozen final calibrator. The service
+  completed all evaluator rows at 11:01:40 CST and failed only during final
+  reporting at 11:01:42. Original traceback/logs are preserved.
+- Reporting repaired after inference: resolve the explicit detailed-log path
+  in console output instead of expecting DEBUG audit records on console.
+  Summarization alone rerun successfully; no scientific rows or models rerun.
+- Final artifacts: `Game4Loc/reports/gta_pose_likelihood_20260903/README.md`
+  and `official_summary.json` in that directory (source paths and hashes).
+- Notebook: 23 valid cells, 13/13 code cells executed, zero errors, five
+  embedded plots. Regression tests: 15/15 passed.
+- This scheduled same-area stage is complete. Do not fit again, adjust
+  thresholds on test, repeat the three rows, or start cross-area automatically.
+  The earlier stop/reopen/active-stage bullets below are historical chronology.
+
 As of this handoff:
 
 - Active branch: `codex/vop-experiment`
@@ -38,8 +68,8 @@ As of this handoff:
   continue on that branch unless the user explicitly reactivates it.
 - `codex/vop-experiment` was pushed through `06ff837` before starting the new
   experiment line.
-- Current uncommitted work is the 2026-09-03 **calibrated multi-tile pose
-  likelihood** experiment infrastructure.
+- The 2026-09-03 **calibrated multi-tile pose likelihood** infrastructure and
+  subsequent reports are implemented; see the latest status above.
 - Detailed success/failure chronology is append-only in:
   - `Process.md`
 - Current smoke status:
@@ -129,7 +159,7 @@ As of this handoff:
   - official unit: `codex-gta-official-full-20260904.service`; logs under
     `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/`
   - official runner launched 2026-09-04 08:41 CST from `4cb181e`, PID `76644`;
-    legacy row completed at 09:02 CST, raw at 10:29 CST; adaptive is running
+    legacy row completed at 09:02 CST, raw at 10:29 CST, adaptive at 11:01 CST
   - official raw top-5x4 audit verified 3,443 unique queries and identical
     coarse errors to legacy: Dis@1 `73.8959m`, MA@20 `49.8693%`,
     worse-than-coarse `12.8086%`, catastrophe `5.7508%`,
@@ -139,16 +169,13 @@ As of this handoff:
     MA@20 `46.5582%`, worse-than-coarse `12.0825%`, catastrophe `2.5559%`,
     VOP+matcher `0.260941s/query`; use this matched row, not cached legacy
   - reporting issue discovered before completion: stdout variant logs omit
-    DEBUG `FineAudit` records; the detailed app logs contain them (legacy/raw
-    verified complete). After all three evaluator rows finish, repair only
-    the summarizer's log-source resolution using the explicit app-log path
-    printed in stdout, add regression tests and rerun summarization only.
-    The runner's final summarization is expected to fail until this repair;
-    do not rerun completed scientific rows or overwrite original logs.
+    DEBUG `FineAudit` records; detailed app logs contain them. The final
+    summarizer failure occurred and was repaired after all three rows ended;
+    only summarization was rerun. Preserve all original logs.
   - do not change Python inference/reporting sources or calibrator while the
     official runner is active: it verifies source and artifact fingerprints
-  - notebook refreshed: 23 cells, 13/13 code executed, zero errors, four embedded
-    figures; official results explicitly pending
+  - notebook refreshed: 23 cells, 13/13 code executed, zero errors, five embedded
+    figures; official matched results included
   - no cross-area work yet
 - New research question:
   - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated

@@ -1,0 +1,177 @@
+{
+  "scope": "Official matched full same-area; no cross-area validation",
+  "variants": {
+    "legacy_top1": {
+      "Dis@1_m": 56.989809639436864,
+      "median_m": 21.9756465033,
+      "MA@3_pct": 4.327621260528609,
+      "MA@5_pct": 10.485042114435085,
+      "MA@10_pct": 24.484461225675282,
+      "MA@20_pct": 46.558234098170196,
+      "worse_than_coarse_pct": 12.082486203891955,
+      "catastrophic_50m_pct": 2.5559105431309903,
+      "query_count": 3443,
+      "worse_than_coarse_count": 416,
+      "catastrophic_50m_count": 88,
+      "fallback_count": 330,
+      "fallback_pct": 9.584664536741213,
+      "mean_hypotheses": 4.0,
+      "mean_vop_s": 0.03645307214928841,
+      "mean_matcher_s": 0.22448796141736854,
+      "mean_vop_match_s": 0.260941033566657,
+      "official_retrieval_and_distance_metrics": {
+        "Recall@1": 91.1124,
+        "Recall@5": 99.3901,
+        "Recall@10": 99.5353,
+        "mAP": 94.8114,
+        "SDM@1": 89.131,
+        "SDM@3": 89.131,
+        "SDM@5": 89.131,
+        "Dis@1": 56.9898,
+        "Dis@3": 165.2348,
+        "Dis@5": 216.9398
+      },
+      "official_diagnostics": {
+        "identity-H fallback": 326.0,
+        "out-of-bounds": 4.0,
+        "projection-invalid": 0.0,
+        "mean_retained_matches": 263.08,
+        "mean_inliers": 84.74,
+        "mean_inlier_ratio": 0.2935,
+        "overall_evaluator_s": 1272.720925
+      },
+      "source_log": "/home/lcy/Workplace/GTA-UAV/Game4Loc/Log/vit_base_patch16_rope_reg1_gap_256_sbb_in1k_eval_GTA-UAV_same_match_on_20260904_0841.log",
+      "source_log_sha256": "6ac0f5c7c503301763e3d089fbaa509f2c4890ee6a9ca8b16fdc2623ea02235d",
+      "console_log": "/home/lcy/Workplace/GTA-UAV/Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/legacy_top1.log"
+    },
+    "raw_top5x4": {
+      "Dis@1_m": 73.89585333885701,
+      "median_m": 20.1220360663,
+      "MA@3_pct": 4.269532384548359,
+      "MA@5_pct": 10.194597734533836,
+      "MA@10_pct": 25.501016555329652,
+      "MA@20_pct": 49.86930002904444,
+      "worse_than_coarse_pct": 12.808597153645076,
+      "catastrophic_50m_pct": 5.7507987220447285,
+      "query_count": 3443,
+      "worse_than_coarse_count": 441,
+      "catastrophic_50m_count": 198,
+      "fallback_count": 206,
+      "fallback_pct": 5.983154225965728,
+      "mean_hypotheses": 20.0,
+      "mean_vop_s": 0.1808863930031949,
+      "mean_matcher_s": 1.1539067034156258,
+      "mean_vop_match_s": 1.3347930964188206,
+      "official_retrieval_and_distance_metrics": {
+        "Recall@1": 91.1124,
+        "Recall@5": 99.3901,
+        "Recall@10": 99.5353,
+        "mAP": 94.8114,
+        "SDM@1": 89.131,
+        "SDM@3": 89.131,
+        "SDM@5": 89.131,
+        "Dis@1": 73.8959,
+        "Dis@3": 165.2348,
+        "Dis@5": 216.9398
+      },
+      "official_diagnostics": {
+        "identity-H fallback": 206.0,
+        "out-of-bounds": 0.0,
+        "projection-invalid": 0.0,
+        "mean_retained_matches": 237.96,
+        "mean_inliers": 88.4,
+        "mean_inlier_ratio": 0.3391,
+        "overall_evaluator_s": 5234.727339
+      },
+      "source_log": "/home/lcy/Workplace/GTA-UAV/Game4Loc/Log/vit_base_patch16_rope_reg1_gap_256_sbb_in1k_eval_GTA-UAV_same_match_on_20260904_0902.log",
+      "source_log_sha256": "f2ec50218e00e519d1f6bb78e9858ce240501d19d3075e0306962a158450d4e4",
+      "console_log": "/home/lcy/Workplace/GTA-UAV/Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/raw_top5x4.log"
+    },
+    "adaptive_calibrated": {
+      "Dis@1_m": 48.82548497211229,
+      "median_m": 20.7119552894,
+      "MA@3_pct": 4.443799012489108,
+      "MA@5_pct": 10.51408655242521,
+      "MA@10_pct": 24.57159453964566,
+      "MA@20_pct": 48.649433633459196,
+      "worse_than_coarse_pct": 5.808887598024978,
+      "catastrophic_50m_pct": 0.6970665117629974,
+      "query_count": 3443,
+      "worse_than_coarse_count": 200,
+      "catastrophic_50m_count": 24,
+      "fallback_count": 537,
+      "fallback_pct": 15.596863200697067,
+      "mean_hypotheses": 6.936973569561429,
+      "mean_vop_s": 0.0630204241446413,
+      "mean_matcher_s": 0.3896144903252977,
+      "mean_vop_match_s": 0.4526349144699391,
+      "official_retrieval_and_distance_metrics": {
+        "Recall@1": 91.1124,
+        "Recall@5": 99.3901,
+        "Recall@10": 99.5353,
+        "mAP": 94.8114,
+        "SDM@1": 89.131,
+        "SDM@3": 89.131,
+        "SDM@5": 89.131,
+        "Dis@1": 48.8255,
+        "Dis@3": 165.2348,
+        "Dis@5": 216.9398
+      },
+      "official_diagnostics": {
+        "identity-H fallback": 537.0,
+        "out-of-bounds": 0.0,
+        "projection-invalid": 0.0,
+        "mean_retained_matches": 174.06,
+        "mean_inliers": 53.28,
+        "mean_inlier_ratio": 0.2858,
+        "overall_evaluator_s": 1904.061273
+      },
+      "source_log": "/home/lcy/Workplace/GTA-UAV/Game4Loc/Log/vit_base_patch16_rope_reg1_gap_256_sbb_in1k_eval_GTA-UAV_same_match_on_20260904_1029.log",
+      "source_log_sha256": "29c40c58abf1d9ce4396e4f26c614cf4846afa3996b15025ace2b27a0bfee7d6",
+      "console_log": "/home/lcy/Workplace/GTA-UAV/Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/adaptive_calibrated.log"
+    }
+  },
+  "paired_effects": {
+    "Dis@1_improvement_m": {
+      "estimate": 8.164324667324573,
+      "ci95": [
+        5.841159308225112,
+        11.137013655748353
+      ]
+    },
+    "MA@20_improvement_pp": {
+      "estimate": 2.0911995352889923,
+      "ci95": [
+        0.9577403427243689,
+        3.252977054893988
+      ]
+    },
+    "worse_than_coarse_reduction_pp": {
+      "estimate": 6.273598605866977,
+      "ci95": [
+        5.257043276212605,
+        7.232065059541099
+      ]
+    },
+    "catastrophic_50m_reduction_pp": {
+      "estimate": 1.858844031367993,
+      "ci95": [
+        1.2779552715654952,
+        2.439732791170491
+      ]
+    }
+  },
+  "bootstrap": {
+    "seed": 20260903,
+    "replicates": 10000,
+    "unit": "query"
+  },
+  "full_samearea_gates": {
+    "Dis_relative_reduction_ge_5pct": true,
+    "MA20_gain_ge_2pp": true,
+    "worse_than_coarse_nonincrease": true,
+    "catastrophic_nonincrease": true
+  },
+  "decision": "KEEP",
+  "timing_scope": "VOP + matcher timers, not end-to-end latency"
+}

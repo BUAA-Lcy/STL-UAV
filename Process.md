@@ -1090,3 +1090,85 @@ systemd-run --user --unit=codex-gta-official-full-20260904 --collect \
 
 - `REJECT` for uncalibrated raw expansion as the main method. This does not
   decide the still-running calibrated adaptive experiment.
+
+### 2026-09-04 — official matched evaluation complete; final reporting repair
+
+#### Experiment Name
+
+- Final full-train calibrated adaptive selection, official same-area test.
+
+#### Change Compared to Baseline
+
+- Frozen final HGB and train-selected expansion/abstention policy versus
+  matched legacy top-1 VOP; no retrieval, VOP recipe, matcher or yaw changes.
+- All three inference rows used snapshot `4cb181e` and the same calibrator
+  fingerprint where applicable. Adaptive finished 11:01:40 CST.
+
+#### Quantitative Results
+
+- 3,443 unique queries per row; cohorts and all per-query coarse errors match
+  exactly. High-precision audit means match each official Dis@1 summary.
+- Adaptive Dis@1/3/5: `48.8255/165.2348/216.9398m`;
+  MA@3/5/10/20: `4.4438/10.5141/24.5716/48.6494%`.
+- Recall@1/5/10 and mAP remain `91.1124/99.3901/99.5353/94.8114%`.
+- Adaptive fallback `537`, worse-than-coarse `200`, identity-H `537`,
+  out-of-bounds `0`, invalid projection `0`, catastrophe +50m `24`, all out
+  of 3,443 queries. Mean retained/inliers/ratio `174.06/53.28/0.2858`.
+- Mean hypotheses `6.93697`; VOP `0.063020s`, matcher `0.389614s`, sum
+  `0.452635s/query`; overall evaluator `1904.061273s`.
+- Versus legacy: mean error `56.9898 -> 48.8255m` (-14.33%), MA@20
+  `46.5582 -> 48.6494%` (+2.0912pp), worse `416 -> 200`, catastrophe
+  `88 -> 24`. Fallback rises `330 -> 537`; VOP+matcher cost is about 1.73x.
+- Paired bootstrap (10,000, seed 20260903):
+  - error reduction `8.1643m`, 95% CI `[5.8412,11.1370]`;
+  - MA@20 gain `2.0912pp`, CI `[0.9577,3.2530]`;
+  - worse-than-coarse reduction `6.2736pp`, CI `[5.2570,7.2321]`;
+  - catastrophe reduction `1.8588pp`, CI `[1.2780,2.4397]`.
+
+#### Interpretation
+
+- All full-stage point-estimate gates pass. The MA@20 estimate only narrowly
+  exceeds 2pp; its CI does not establish an improvement greater than 2pp.
+  Query bootstrap ignores spatial correlation and training variability.
+- Calibrated adaptive is safer and lower-error than raw expansion, but raw
+  has slightly better MA@20. Do not describe the method as winning every
+  metric, free of cost, or validated on cross-area/continuous navigation.
+- The predicted reporting failure occurred at 11:01:42: `ValueError:
+  legacy_top1: expected 3443 queries, got 0`. The detailed logs contained all
+  audit records; INFO-only redirected console logs did not. The journal
+  records service exit 1 even though a later `systemctl show` on the collected
+  unit displayed default inactive/success fields. Trust the preserved journal
+  and runner traceback, not that stale/default success field.
+- After inference ended, changed only the summarizer and regression tests:
+  use the explicit absolute detailed-log path, reject missing/ambiguous paths,
+  avoid concatenation/duplicate rows, and retain source hashes and additional
+  official diagnostics. No evaluator, matcher or calibrator changed.
+- Reran only this reporting command successfully (from `Game4Loc`):
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+  /home/lcy/miniconda3/envs/gtauav/bin/python summarize_gta_pose_official.py \
+  --run_dir work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904
+```
+
+- Original evaluator logs and traceback are untouched. Full matched metrics,
+  diagnostics, CIs and source hashes are snapshotted in the report directory's
+  `official_summary.json`; the snapshot was checked equal to the run artifact.
+- Notebook skill applied to the existing report: explicit official/cached
+  separation, source-hash checks, bounded result tables, official comparison
+  figure and a final official decision. No training is performed by notebook.
+  The related validate-data skill was unavailable; direct data-integrity and
+  reconciliation checks substitute for it.
+- Notebook executed top-to-bottom with absolute isolated-runtime PYTHONPATH:
+  23 schema-valid cells, 13/13 executed code cells, zero errors, five embedded
+  PNG figures. Runtime emitted an unencrypted local TCP kernel warning; no
+  notebook/runtime package configuration was changed in response.
+- Regression tests: 15/15 passed; modified Python compilation and whitespace
+  checks passed. New tests cover real console/file-handler source resolution,
+  missing/ambiguous paths and final diagnostic extraction.
+
+#### Decision
+
+- `KEEP` for the final calibrated adaptive same-area method. Preserve raw
+  expansion's `REJECT` and historical pilot failures. This scheduled stage
+  ends with the report; no further fitting, sweeps or cross-area launch.
