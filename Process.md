@@ -995,3 +995,50 @@ systemd-run --user --unit=codex-gta-official-full-20260904 --collect \
   `76644`, snapshot `4cb181e`. The legacy row has loaded all 3,443 queries and
   14,640 gallery tiles and begun feature extraction. The existing heartbeat
   now monitors these official runs and will not repeat completed fitting.
+
+### 2026-09-04 09:18 CST — official legacy completed; reporting-source audit
+
+#### Experiment Name
+
+- Matched official full same-area legacy top-1 VOP reference.
+
+#### Change Compared to Baseline
+
+- No method change: frozen retrieval, full-teacher Exp C, sparse defaults,
+  top-1 tile and top-4 angles; reference row for the queued raw/adaptive runs.
+
+#### Quantitative Results
+
+- Completed at 09:02:28 CST. Detailed log:
+  `Game4Loc/Log/vit_base_patch16_rope_reg1_gap_256_sbb_in1k_eval_GTA-UAV_same_match_on_20260904_0841.log`.
+- Parsed 3,443 unique `FineAudit` records; their mean error agrees with the
+  official rounded Dis@1. Recall@1/5/10: `91.1124/99.3901/99.5353%`,
+  mAP `94.8114%`; Dis@1/3/5: `56.9898/165.2348/216.9398m`.
+- MA@3/5/10/20: `4.3276/10.4850/24.4845/46.5582%`.
+- Fallback `330/3443`, worse-than-coarse `416/3443`, identity-H `326`,
+  out-of-bounds `4`, invalid projection `0`, catastrophic +50m `88/3443`
+  (`2.5559%`). Mean retained matches/inliers/ratio: `263.08/84.74/0.2935`.
+- Mean VOP `0.036453s`, matcher `0.224488s`, sum `0.260941s/query`;
+  these timers are not end-to-end latency. Overall evaluator `1272.720925s`.
+
+#### Interpretation
+
+- The official reference differs from cached legacy (`58.1574m/46.0935%`).
+  Do not attribute the difference to a cause without diagnosis, and do not
+  mix the cache row into the matched official comparison.
+- Raw top-5x4 started at 09:02:28 and is healthy; adaptive is queued.
+  No model, threshold, inference source or runtime configuration was changed.
+- Reporting defect found: the summarizer reads redirected console logs,
+  while the logger sends DEBUG `FineAudit` only to its detailed file handler.
+  The legacy data are intact in the detailed log; this is not missing
+  evaluation data. Existing synthetic parser tests did not cover the real
+  split-handler logging setup.
+- Preserve source fingerprints while the runner is active. Once all three
+  rows finish, fix the summarizer to resolve the explicit detailed-log path
+  recorded in stdout, test this integration, then rerun only summarization.
+  Automatic final summary may fail first; preserve that failure log too.
+
+#### Decision
+
+- `NEEDS ONE FOLLOW-UP`: complete the already-queued matched rows and repair
+  reporting-source resolution; no new model experiment or refit.

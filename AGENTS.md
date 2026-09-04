@@ -129,7 +129,17 @@ As of this handoff:
   - official unit: `codex-gta-official-full-20260904.service`; logs under
     `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/`
   - official runner launched 2026-09-04 08:41 CST from `4cb181e`, PID `76644`;
-    legacy row is running, raw/adaptive are queued sequentially
+    legacy row completed at 09:02 CST; raw is running and adaptive is queued
+  - official legacy audit verified 3,443 unique queries: Dis@1 `56.9898m`,
+    MA@20 `46.5582%`, worse-than-coarse `12.0825%`, catastrophe `2.5559%`,
+    VOP+matcher `0.260941s/query`; use this matched row, not cached legacy
+  - reporting issue discovered before completion: stdout variant logs omit
+    DEBUG `FineAudit` records; the detailed app logs contain them (legacy
+    verified complete). After all three evaluator rows finish, repair only
+    the summarizer's log-source resolution using the explicit app-log path
+    printed in stdout, add regression tests and rerun summarization only.
+    The runner's final summarization is expected to fail until this repair;
+    do not rerun completed scientific rows or overwrite original logs.
   - do not change Python inference/reporting sources or calibrator while the
     official runner is active: it verifies source and artifact fingerprints
   - notebook refreshed: 23 cells, 13/13 code executed, zero errors, four embedded
