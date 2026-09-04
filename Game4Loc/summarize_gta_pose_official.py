@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -31,6 +32,39 @@ def parse_audit(text: str) -> dict:
     return rows
 
 
+def load_audit_log(console_path: Path) -> tuple[str, Path]:
+    """Resolve the explicit file-handler log when INFO console omits DEBUG rows.
+
+    Never concatenate both logs (which duplicates records), guess a nearby
+    timestamp, or replace a partially populated audit log with another source.
+    """
+    console_path = console_path.resolve()
+    console = console_path.read_text(encoding='utf-8')
+    if 'FineAudit query=' in console:
+        return console, console_path
+    paths = set(re.findall(r'自动日志路径: ([^\r\n]+)', console))
+    if len(paths) != 1:
+        raise ValueError(f'{console_path}: expected one explicit detailed-log path, got {len(paths)}')
+    source = Path(paths.pop().strip())
+    if not source.is_absolute():
+        raise ValueError(f'{console_path}: detailed-log path must be absolute')
+    return source.read_text(encoding='utf-8'), source.resolve()
+
+
+def diagnostic_summary(log: str) -> dict:
+    """Preserve additional official INFO diagnostics without changing metrics."""
+    fields = {}
+    for key in ('identity-H fallback', 'out-of-bounds', 'projection-invalid',
+                'mean_retained_matches', 'mean_inliers', 'mean_inlier_ratio'):
+        matches = re.findall(re.escape(key) + r'=([\d.eE+-]+)', log)
+        if matches:
+            fields[key] = float(matches[-1])
+    elapsed = re.findall(r'测试阶段总体评估 \| 耗时=([\d.]+)s', log)
+    if elapsed:
+        fields['overall_evaluator_s'] = float(elapsed[-1])
+    return fields
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run_dir', required=True)
@@ -43,7 +77,8 @@ def main():
     records, summaries = {}, {}
     names = None
     for variant in variants:
-        log = (run_dir / f'{variant}.log').read_text()
+        console_path = run_dir / f'{variant}.log'
+        log, source_path = load_audit_log(console_path)
         rows = parse_audit(log)
         if len(rows) != args.expected_queries:
             raise ValueError(f'{variant}: expected {args.expected_queries} queries, got {len(rows)}')
@@ -63,6 +98,8 @@ def main():
             raise ValueError(f'{variant}: FineAudit mean disagrees with official Dis@1')
         summaries[variant] = {
             **metrics, 'query_count': len(rows),
+            'worse_than_coarse_count': int(np.sum(errors > coarse)),
+            'catastrophic_50m_count': int(np.sum(errors > coarse + 50)),
             'fallback_count': sum(r['fallback'] for r in rows.values()),
             'fallback_pct': 100 * np.mean([r['fallback'] for r in rows.values()]),
             'mean_hypotheses': np.mean([r['hypotheses'] for r in rows.values()]),
@@ -70,7 +107,10 @@ def main():
             'mean_matcher_s': np.mean([r['matcher_s'] for r in rows.values()]),
             'mean_vop_match_s': np.mean([r['vop_s'] + r['matcher_s'] for r in rows.values()]),
             'official_retrieval_and_distance_metrics': logged,
-            'source_log': str((run_dir / f'{variant}.log').resolve()),
+            'official_diagnostics': diagnostic_summary(log),
+            'source_log': str(source_path),
+            'source_log_sha256': hashlib.sha256(source_path.read_bytes()).hexdigest(),
+            'console_log': str(console_path.resolve()),
         }
     coarse = np.asarray([records['legacy_top1'][n]['coarse'] for n in names])
     for variant in variants[1:]:

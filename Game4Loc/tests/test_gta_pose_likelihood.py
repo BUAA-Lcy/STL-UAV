@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from build_gta_pose_hypothesis_cache import _read_completed, _stratified_indices
 from fit_gta_pose_likelihood import risk70
 from audit_gta_pose_likelihood_statistics import exclude_queries, tie_aware_risk
-from summarize_gta_pose_official import parse_audit
+from summarize_gta_pose_official import load_audit_log, parse_audit, diagnostic_summary
 from game4loc.evaluate.gta_pose_likelihood import (
     CALIBRATOR_SCHEMA_VERSION,
     FEATURE_NAMES,
@@ -167,6 +167,39 @@ class GTAPoseLikelihoodTests(unittest.TestCase):
         line = 'FineAudit query=a.png coarse_m=20 final_m=30 fallback=0 hypotheses=4 vop_s=0.01 matcher_s=0.20'
         with self.assertRaisesRegex(ValueError, 'Duplicate'):
             parse_audit(line + '\n' + line)
+
+    def test_official_console_resolves_debug_file_handler(self):
+        with tempfile.TemporaryDirectory() as directory:
+            detail = Path(directory) / 'app detail.log'
+            console = Path(directory) / 'console.log'
+            line = 'FineAudit query=a.png coarse_m=20 final_m=30 fallback=0 hypotheses=4 vop_s=0.01 matcher_s=0.20'
+            detail.write_text(line)
+            console.write_text(f'INFO 自动日志路径: {detail}\nRecall@1: 90 - Dis@1: 30\n')
+            text, source = load_audit_log(console)
+            self.assertEqual(source, detail.resolve())
+            self.assertEqual(list(parse_audit(text)), ['a.png'])
+            # A direct/partial audit log is never silently replaced.
+            console.write_text(line + f'\n自动日志路径: {detail}\n')
+            self.assertEqual(load_audit_log(console)[1], console.resolve())
+
+    def test_official_console_rejects_ambiguous_or_missing_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            console = Path(directory) / 'console.log'
+            for text in ('no source', '自动日志路径: /a\n自动日志路径: /b\n',
+                         '自动日志路径: relative.log\n'):
+                console.write_text(text)
+                with self.assertRaises(ValueError):
+                    load_audit_log(console)
+            console.write_text(f'自动日志路径: {directory}/absent.log\n')
+            with self.assertRaises(FileNotFoundError):
+                load_audit_log(console)
+
+    def test_official_diagnostics_keep_final_summary_values(self):
+        parsed = diagnostic_summary('mean_inliers=1\nmean_inliers=84.74 identity-H fallback=326\n'
+                                    '测试阶段总体评估 | 耗时=1272.720925s')
+        self.assertEqual(parsed['mean_inliers'], 84.74)
+        self.assertEqual(parsed['identity-H fallback'], 326)
+        self.assertEqual(parsed['overall_evaluator_s'], 1272.720925)
 
 
 if __name__ == "__main__":
