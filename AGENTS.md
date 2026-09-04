@@ -128,6 +128,8 @@ As of this handoff:
     cached raw fallback-center semantics differ, so do not quote cache as headline
   - official unit: `codex-gta-official-full-20260904.service`; logs under
     `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/`
+  - official runner launched 2026-09-04 08:41 CST from `4cb181e`, PID `76644`;
+    legacy row is running, raw/adaptive are queued sequentially
   - do not change Python inference/reporting sources or calibrator while the
     official runner is active: it verifies source and artifact fingerprints
   - notebook refreshed: 23 cells, 13/13 code executed, zero errors, four embedded

@@ -991,3 +991,7 @@ systemd-run --user --unit=codex-gta-official-full-20260904 --collect \
 
 - No cross-area experiment is launched. Official completion and matched
   metrics must be reported before considering the next stage.
+- Launch confirmed at 2026-09-04 08:41 CST: service active/running, main PID
+  `76644`, snapshot `4cb181e`. The legacy row has loaded all 3,443 queries and
+  14,640 gallery tiles and begun feature extraction. The existing heartbeat
+  now monitors these official runs and will not repeat completed fitting.
