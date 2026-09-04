@@ -512,6 +512,7 @@ def evaluate(
         "query_count": 0,
         "fallback_count": 0,
         "worse_than_coarse_count": 0,
+        "catastrophic_50m_count": 0,
         "identity_h_fallback_count": 0,
         "out_of_bounds_count": 0,
         "projection_invalid_count": 0,
@@ -978,6 +979,7 @@ def evaluate(
             final_match_stats["total_time_sum"] += float(query_vop_time + query_match_time)
             final_match_stats["fallback_count"] += int(is_fallback)
             final_match_stats["worse_than_coarse_count"] += int(dis_match > (dis_ori + 1e-6))
+            final_match_stats["catastrophic_50m_count"] += int(dis_match > (dis_ori + 50.0))
             final_match_stats["identity_h_fallback_count"] += int(bool(match_info_dict.get("identity_h_fallback", False)))
             final_match_stats["out_of_bounds_count"] += int(bool(match_info_dict.get("out_of_bounds", False)))
             final_match_stats["projection_invalid_count"] += int(bool(match_info_dict.get("projection_invalid", False)))
@@ -1006,6 +1008,11 @@ def evaluate(
                 str(match_info_dict.get("n_kept", "NA")),
                 str(match_info_dict.get("inliers", "NA")),
                 str(match_info_dict.get("final_vis_path", "")),
+            )
+            logger.debug(
+                "FineAudit query=%s coarse_m=%.10f final_m=%.10f fallback=%d hypotheses=%d vop_s=%.8f matcher_s=%.8f",
+                query_name, dis_ori, dis_match, int(is_fallback),
+                int(hypotheses_evaluated), float(query_vop_time), float(query_match_time),
             )
             
         sdm_list.append(sdm(query_center_loc_xy_list[i], sdmk_list, index, gallery_center_loc_xy_list))
@@ -1088,6 +1095,9 @@ def evaluate(
         final_query_count = int(final_match_stats["query_count"])
         fallback_count, fallback_ratio = _format_count_ratio(final_match_stats["fallback_count"], final_query_count)
         worse_count, worse_ratio = _format_count_ratio(final_match_stats["worse_than_coarse_count"], final_query_count)
+        catastrophic_count, catastrophic_ratio = _format_count_ratio(
+            final_match_stats["catastrophic_50m_count"], final_query_count
+        )
         identity_count, identity_ratio = _format_count_ratio(final_match_stats["identity_h_fallback_count"], final_query_count)
         oob_count, oob_ratio = _format_count_ratio(final_match_stats["out_of_bounds_count"], final_query_count)
         invalid_count, invalid_ratio = _format_count_ratio(final_match_stats["projection_invalid_count"], final_query_count)
@@ -1110,6 +1120,10 @@ def evaluate(
             float(final_match_stats["inliers_sum"]) / float(final_query_count),
             float(final_match_stats["inlier_ratio_sum"]) / float(final_query_count),
             final_query_count,
+        )
+        logger.info(
+            "灾难性修正统计: catastrophic_50m=%d(%.4f%%) criterion=final_error>coarse_error+50m",
+            catastrophic_count, catastrophic_ratio,
         )
         logger.info(
             "细定位耗时(按查询汇总): mean_vop_forward_time=%.6fs/query mean_matcher_time=%.6fs/query mean_total_time=%.6fs/query",
