@@ -116,8 +116,23 @@ As of this handoff:
   - cache log: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.log`
   - resume output: `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.jsonl`
   - resume was verified by candidate count advancing from 24 to 35
-  - latest heartbeat: 13,418/13,851 written rows at 2026-09-04 07:51 CST;
-    original service active, no protocol change; final integrity audit pending
+  - cache completed at 2026-09-04 08:04 CST: 13,851 unique queries,
+    277,020 candidates; full train/test integrity and fingerprint checks passed
+  - full-train HGB offline audit: `KEEP`, adaptive `49.47m/49.26%`,
+    worse-than-coarse `5.90%`, catastrophic `0.67%`, mean hypotheses `6.79`
+  - fit/temperature/policy use train only; artifact
+    `final_fulltrain_hgb_calibrator.json` is fixed for official evaluation
+  - historical fitter 70%/15% heuristic still says `REJECT`; do not confuse it
+    with the reopened full-stage gate and paired statistical audit (`KEEP`)
+  - active next step: sequential official legacy/raw/adaptive full-test runs;
+    cached raw fallback-center semantics differ, so do not quote cache as headline
+  - official unit: `codex-gta-official-full-20260904.service`; logs under
+    `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/`
+  - do not change Python inference/reporting sources or calibrator while the
+    official runner is active: it verifies source and artifact fingerprints
+  - notebook refreshed: 23 cells, 13/13 code executed, zero errors, four embedded
+    figures; official results explicitly pending
+  - no cross-area work yet
 - New research question:
   - can bounded retrieval top-R × VOP top-k hypotheses plus calibrated
     abstention recover tile-boundary/top-1 failures without increasing

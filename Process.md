@@ -852,3 +852,142 @@ WANDB_MODE=disabled /home/lcy/miniconda3/envs/gtauav/bin/python \
   interim aggregate evaluation, restart or configuration change occurred.
 - Final integrity checks and fixed-family train-only fitting remain pending.
 - Decision: `KEEP` (continue unchanged; no user action required).
+
+### Full same-area train cache — completion and integrity audit
+
+- The durable service finished at 2026-09-04 08:04 CST. It saved 13,827 new
+  rows plus the original 24, totaling 13,851 unique queries and 277,020
+  candidates. Last logged candidate-stage elapsed time: `24928.8s` at 13,825
+  resumed queries; this excludes feature extraction and initial wrapper work.
+- Both full caches passed exact query counts, unique names, complete query
+  index ranges, 5x4 rank grids, 24-feature schema and finite-value checks.
+  Labels agree with the cached `<20m` errors; train/test names do not overlap.
+- Manifest fingerprints were recomputed and matched; both checkpoint file
+  identities (size/mtime) are unchanged. Full cache SHA256 values are saved in
+  `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_cache_integrity.json`.
+- Mean cached VOP+matcher time for all 20 candidates: train `1.7050s/query`,
+  test `1.7621s/query`. These are not adaptive official-evaluator timings.
+- Decision: `KEEP` (cache validation only).
+
+### Final full-train HGB fit — locked protocol before execution
+
+- Fit family: explicit `hist_gradient_boosting`, no logistic comparison and no
+  test-triggered follow-up. Seed and HGB settings remain unchanged.
+- All model fitting, temperature scaling and policy selection use only the
+  grouped full-train split; full-test labels are evaluation-only.
+- Artifact: `final_fulltrain_hgb_calibrator.json`; summary:
+  `final_fulltrain_hgb_summary.json` under the current run directory.
+- The fitter's historical 70%/15% decision is retained as a diagnostic, not
+  reinstated as the controlling full-stage rule. The full-stage decision uses
+  the already agreed relative Dis@1 reduction >=5%, MA@20 gain >=2pp,
+  nonincreasing worse-than-coarse and catastrophic +50m rates, accompanied by
+  the fixed-seed 10,000-replicate paired statistical audit.
+- Official same-snapshot evaluator runs are still required for headline
+  accuracy and runtime; cached analyses must remain labeled offline.
+
+### Final-fit execution follow-up and official audit instrumentation
+
+- The initial default-thread fit was interrupted before writing its artifact
+  or summary. Its traceback confirms it was inside HGB prediction; the log is
+  retained as `final_fulltrain_hgb_fit_default_threads.log`.
+- A label-free 20-candidate inference benchmark on the existing pilot model
+  measured 10 calls at `0.1974s` with 20 threads versus `0.00634s` with one
+  thread; maximum probability difference was exactly zero for this check.
+- The final fit was restarted with identical data/model/seed and
+  `OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1`. This is a runtime
+  control, not a model sweep; no result from the interrupted fit was selected.
+- Exact fitting command (from `Game4Loc`):
+
+```bash
+WANDB_MODE=disabled OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+  /home/lcy/miniconda3/envs/gtauav/bin/python -u fit_gta_pose_likelihood.py \
+  --train_cache ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_train13851.jsonl \
+  --eval_cache ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/full_test3443_frozen2000.jsonl \
+  --artifact_path ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/final_fulltrain_hgb_calibrator.json \
+  --summary_path ./work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/final_fulltrain_hgb_summary.json \
+  --model_type hist_gradient_boosting --seed 20260903
+```
+
+- Added official-evaluator logging only: high-precision per-query `FineAudit`
+  lines and an exact `final_error > coarse_error + 50m` counter. Selection,
+  matcher algorithms and metadata semantics are unchanged.
+- Added a sequential three-row runner with source fingerprints and no log
+  overwrite. Official timing will not overlap CPU fitting.
+- Test invocation via `tests.test_gta_pose_likelihood` from `Game4Loc` failed
+  because that module path was not importable; direct execution of
+  `tests/test_gta_pose_likelihood.py` passed all 10 tests. Python compilation
+  and shell syntax checks passed.
+- Decision: `KEEP` (execution/instrumentation validation only).
+
+### Final full-train HGB — offline result
+
+- The single-thread execution completed with the fixed HGB family. Training
+  used 11,773 queries and calibration/policy selection 2,078 queries;
+  temperature `0.93780669`, R1 threshold `0.22118673`, R3 `0.41175587`,
+  abstention `0.25629607`, orientation top-k 4.
+- Full-test adaptive: `Dis@1=49.4665m`, `MA@20=49.2594%`, worse-than-coarse
+  `5.8960%`, catastrophic +50m `0.6680%`, mean hypotheses `6.7883`.
+- Matched offline legacy: `58.1574m`, `46.0935%`, `11.8792%`, `3.1949%`.
+  Relative error reduction `14.94%`; MA@20 gain `3.1658pp`.
+- AUROC `0.891212`, AUPRC `0.598288`, NLL `0.278925`, Brier `0.086758`,
+  equal-mass ECE `0.012620`.
+- The untouched historical fitter heuristic returns `REJECT` (70%-coverage
+  risk improvement `10.08%` <15%). This is not the reopened full-stage rule.
+- Fixed-seed 10,000-query bootstrap audit: `KEEP`.
+  - Dis@1 improvement `8.691m`, CI `[7.136,10.284]`;
+  - MA@20 gain `3.166pp`, CI `[2.295,4.008]`;
+  - catastrophic reduction `2.527pp`, CI `[1.975,3.108]`;
+  - AURC reduction `10.390m`, CI `[8.168,13.057]`;
+  - the 90%-coverage improvement CI crosses zero and is retained as such.
+- Compared with the frozen 2,000-query calibrator, full-train error/MA@20 are
+  slightly worse, but catastrophe rate and mean candidate cost are lower. No
+  test-set model selection is performed between those artifacts.
+- A selection-semantics audit found 122 raw selections of non-top1 fallback
+  centers, which the official evaluator maps to coarse top-1. Final adaptive
+  has zero such above-threshold selections and 494 confidence abstentions.
+  Keep raw cache results labeled offline; formal reruns remain necessary.
+- Decision: `KEEP` (offline full-stage result, official confirmation pending).
+
+### Notebook runtime validation follow-up
+
+- The first execution failed before cell execution: relative `PYTHONPATH`
+  ceased to resolve the isolated ipykernel runtime when the kernel changed
+  working directory. Error: `No module named ipykernel_launcher`.
+- Retried using the absolute `work_dir/notebook_runtime` path, without
+  installing or changing packages in `gtauav`. This is an execution-path fix,
+  not a data or model change.
+- The corrected run executed 13/13 code cells with no errors, but output
+  inspection found that the Agg backend did not embed plot images. Added
+  explicit notebook-inline plotting and re-executed; successful cell execution
+  alone was not treated as sufficient report validation.
+- Final notebook validation: 23 valid cells, 13/13 code cells executed,
+  zero error outputs, four embedded PNG plots. The final decision cell shows
+  offline `KEEP` and explicitly preserves the historical heuristic `REJECT`.
+- The official-log summarizer also passed a two-query synthetic end-to-end
+  fixture (all three variants and bootstrap serialization). This is a parser
+  validation only, not experimental evidence.
+- Decision: `KEEP` (report and parser validation).
+
+### Official matched full same-area runs — launch protocol
+
+- Runner: `Game4Loc/scripts/run_gta_pose_full_evaluation.sh`.
+- Sequential rows: legacy top-1 VOP, raw top-5x4, final calibrated adaptive.
+- Fixed final calibrator: `final_fulltrain_hgb_calibrator.json`; no refitting
+  or policy selection is permitted during this stage.
+- The runner guards the tracked Python source fingerprint and calibrator hash
+  between rows. Documentation/notebook updates do not change inference code.
+- All rows use one RTX 5070, `gtauav`, `--num_workers 0`, batch size 64, W&B
+  disabled and the same retrieval/VOP/matcher defaults. CPU fitting is finished
+  before official timing begins.
+- Unit: `codex-gta-official-full-20260904.service`; runner output:
+  `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/runner.log`.
+- Launch command from repository root:
+
+```bash
+systemd-run --user --unit=codex-gta-official-full-20260904 --collect \
+  --working-directory=/home/lcy/Workplace/GTA-UAV/Game4Loc \
+  /bin/bash -lc 'exec bash scripts/run_gta_pose_full_evaluation.sh > work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/official_fulltrain_20260904/runner.log 2>&1'
+```
+
+- No cross-area experiment is launched. Official completion and matched
+  metrics must be reported before considering the next stage.

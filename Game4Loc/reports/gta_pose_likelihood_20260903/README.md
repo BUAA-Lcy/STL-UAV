@@ -1,13 +1,15 @@
-# GTA-UAV Multi-Tile Pose-Likelihood Pilot
+# GTA-UAV Multi-Tile Pose-Likelihood Experiments
 
 ## Decision
 
 Initial pilot: `REJECT` under the heuristic 70%/15% rule.
 Statistical and frozen full-test follow-up: `KEEP`.
+Final full-train offline audit: `KEEP`; matched official reruns pending.
 
 The bounded multi-tile candidate pool has substantial oracle headroom, but the
-pre-registered reliability gate was not met after the single allowed nonlinear
-follow-up. The plan therefore stops before full same-area and cross-area runs.
+initial pre-registered reliability gate was not met after the single allowed
+nonlinear follow-up. That initial experiment stopped. The user subsequently
+reopened the line; later stages are recorded separately below.
 
 ## Protocol
 
@@ -82,14 +84,77 @@ Dis@1 improvement (95% CI `[7.12,10.64]`), `+3.55pp` MA@20 (95% CI
 `[1.45,2.71]`). Tie-aware AURC improves by `9.77m` (95% CI
 `[7.63,12.41]`).
 
-The full same-area thresholds are therefore met by the frozen 2,000-query
-calibrator. The next active stage is generating the complete 13,851-query
-train cache and fitting a final train-only calibrator.
+The full same-area thresholds are met in this offline audit by the frozen
+2,000-query calibrator. These are cached results, not an official headline table.
+
+## Final Full-Train Offline Audit
+
+### Experiment Name
+
+- Refit the pre-fixed HGB family using the complete same-area training cache.
+
+### Change Compared to Baseline
+
+- Frozen retrieval, full-teacher Exp C VOP and matcher; only the calibrated
+  selector uses the expanded 13,851-query training cache.
+- HGB settings remain depth 3, 100 maximum iterations, learning rate 0.05,
+  L2 regularization 1.0 and seed 20260903. Fit uses 11,773 queries;
+  temperature/policy calibration uses the remaining 2,078 queries.
+- Temperature: 0.937807. Expansion thresholds: R1 0.221187, R3 0.411756;
+  abstention threshold: 0.256296. These are selected on train only.
+
+### Quantitative Results
+
+| Variant (same 3,443-query cache) | Dis@1 (m) | MA@20 (%) | Worse than coarse (%) | Catastrophic +50m (%) | Mean hypotheses |
+|---|---:|---:|---:|---:|---:|
+| Legacy top-1 VOP | 58.157 | 46.094 | 11.879 | 3.195 | 4 |
+| Final full-train adaptive | 49.467 | 49.259 | 5.896 | 0.668 | 6.788 |
+| Frozen 2,000-query adaptive (historical follow-up) | 48.990 | 49.753 | 6.622 | 0.900 | 7.369 |
+
+- Dis@1 reduction: 14.94%; MA@20 gain: 3.166pp; both robustness rates decrease.
+- Paired bootstrap (10,000 replicates): error reduction 8.691m, 95% CI
+  [7.136, 10.284]; MA@20 gain 3.166pp, [2.295, 4.008]; catastrophic reduction
+  2.527pp, [1.975, 3.108].
+- Candidate AUROC 0.891212, AUPRC 0.598288, NLL 0.278925, Brier 0.086758,
+  15-bin equal-mass ECE 0.012620.
+- Tie-aware AURC reduction: 10.390m, 95% CI [8.168, 13.057]. The 90%-coverage
+  point remains inconclusive: improvement CI [-1.577, 26.912]m.
+- Exhaustive cache VOP+matcher time: train 1.7050s/query, test 1.7621s/query.
+  This is not adaptive runtime. Official matched timing remains pending.
+
+### Interpretation
+
+- Full-train calibration improves ranking/calibration metrics and reduces
+  catastrophic corrections versus the earlier 2,000-query calibrator, but its
+  mean localization error and MA@20 are slightly worse. No test-driven choice
+  between those two artifacts is made.
+- The fitter still reports `REJECT` under its historical single-point 15%
+  heuristic (observed risk improvement 10.08%). The reopened full-stage rule
+  is recorded independently; the historical output is preserved verbatim.
+- Query bootstrap assumes exchangeable queries; spatial correlation is not
+  modeled. Candidate calibration is not proof of calibrated spatial density.
+- Cache/official fallback semantics require care: raw inlier selection picks
+  a non-top1 tile's fallback center on 122 test queries, whereas the official
+  evaluator returns coarse top-1 in such cases. Final adaptive selection has
+  zero such above-threshold cases (494 confidence abstentions). Consequently,
+  the raw cache row must not be used as an official baseline.
+
+### Decision
+
+`KEEP` — offline full-stage gates and paired audit pass. Run the three official
+matched rows before paper headline claims. Do not begin cross-area yet.
 
 ## Artifacts
 
 - Executed notebook: `Game4Loc/notebooks/gta_pose_likelihood_results.ipynb`
 - Append-only chronology: `Process.md`
+- Committed audit snapshots in this report directory:
+  - `full_cache_integrity.json`
+  - `final_fulltrain_hgb_summary.json` (retains historical heuristic decision)
+  - `final_fulltrain_statistical_audit.json`
+- Final inference artifact (ignored run directory):
+  - `final_fulltrain_hgb_calibrator.json`
+- Official runner: `Game4Loc/scripts/run_gta_pose_full_evaluation.sh`
 - Ignored runtime artifacts:
   - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/pilot_train2000.jsonl`
   - `Game4Loc/work_dir/gta_pose_likelihood_runs/gta_multitile_20260903/pilot_test345.jsonl`
@@ -98,9 +163,11 @@ train cache and fitting a final train-only calibrator.
 
 ## Validation Notes
 
-- Cache integrity: 2,000/345 unique queries, exactly 20 candidates/query, all
-  feature values finite.
-- Unit tests: 7/7 passed after adding the risk-confidence tie regression.
+- Full cache integrity: 13,851/3,443 unique train/test queries, exactly 20
+  candidates/query, all features finite, no query-name overlap, manifest
+  fingerprints verified and checkpoint size/mtime identities unchanged.
+- Unit tests: 12/12 passed, including precise official-log parsing and duplicate
+  query rejection.
 - Official-evaluator smoke: 64 queries completed in calibrated mode.
 - Official inference feature schema contains no GT/error labels.
 - A smoke fitter bug that used error as an implicit confidence tie-break and

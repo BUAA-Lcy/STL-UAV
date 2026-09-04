@@ -1,0 +1,25 @@
+{
+  "train": {
+    "queries": 13851,
+    "unique_queries": 13851,
+    "candidates": 277020,
+    "all_features_finite": true,
+    "rank_grid_complete": true,
+    "fingerprint_verified": "351cfac0cf01675e20dc7f712d8feeb6871a7ed70aba0f71e4b845ced21d7717",
+    "checkpoint_identities_unchanged": true,
+    "cache_sha256": "aca089e9f0ef3df4c1398c1d9629cd234b8dc15e4123117cbddde80380a16bad",
+    "mean_candidate_vop_match_time_s": 1.7049739166992488
+  },
+  "test": {
+    "queries": 3443,
+    "unique_queries": 3443,
+    "candidates": 68860,
+    "all_features_finite": true,
+    "rank_grid_complete": true,
+    "fingerprint_verified": "418d7d64630c26acb02e547667d3654b1c550cd754395756e29dc71fc5d130f2",
+    "checkpoint_identities_unchanged": true,
+    "cache_sha256": "1ea025343d9359bbb4f833365b1bdc5a43a3e57eb24f76905d719f7d973fc372",
+    "mean_candidate_vop_match_time_s": 1.762055087784542
+  },
+  "train_test_query_overlap": 0
+}
