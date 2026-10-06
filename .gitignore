@@ -207,3 +207,4 @@ Log/
 
 # Source code for the standalone real-video demo
 !Game4Loc/new_real_demo/
+!Game4Loc/new_real_demo/results/google_earth_20260927/frames.csv
