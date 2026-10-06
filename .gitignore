@@ -204,3 +204,6 @@ Game4Loc/train_private.sh
 *.out
 W&B/
 Log/
+
+# Source code for the standalone real-video demo
+!Game4Loc/new_real_demo/

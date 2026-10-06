@@ -1,0 +1,45 @@
+{
+  "recorded_on": "2026-10-06",
+  "artifacts": [
+    {
+      "path": "Game4Loc/work_dir/new_real_demo/new_real_demo.mp4",
+      "bytes": 12427550,
+      "sha256": "5e4e0c5a2568f5d2056d9d5545ff7e168b87bf4c6035f7fd53f068808fe2eaa8"
+    },
+    {
+      "path": "Game4Loc/work_dir/new_real_demo/satellite_frames.mp4",
+      "bytes": 2793645,
+      "sha256": "63938f5b8c0dbf77161a02720532059e81146b63abc592080e3fd71e6758d9a5"
+    },
+    {
+      "path": "Game4Loc/work_dir/new_real_demo/frames.csv",
+      "bytes": 1042574,
+      "sha256": "05708c7b7e532b8a8a09f8f63ed469317afc27092036f6a030f6a508bb27880b"
+    },
+    {
+      "path": "Game4Loc/work_dir/new_real_demo/manifest.json",
+      "bytes": 3123,
+      "sha256": "12ffa540155ddc4e1aae2eeb1a2b24de490ae9582aa2953fa6e1e750d99899ae"
+    },
+    {
+      "path": "Game4Loc/work_dir/new_real_demo/index.html",
+      "bytes": 7051,
+      "sha256": "ad7e78b02687d26ef6051ede65d60119c9d9a3e50244508f4e57916f4f60c6b6"
+    },
+    {
+      "path": "Game4Loc/work_dir/new_real_demo/frames.js",
+      "bytes": 333173,
+      "sha256": "0cf8589e69016962a6383a3339aeba13f08f127aacbe227a1b9af8c8c4fabb67"
+    },
+    {
+      "path": "Game4Loc/work_dir/new_real_demo/google_earth_export/clean.jpg",
+      "bytes": 20147125,
+      "sha256": "7aab54e9992ae9e5f399129f6bb6f878ed6b3a8684ba158fb99ab431337366e9"
+    },
+    {
+      "path": "Game4Loc/work_dir/new_real_demo/google_earth_export/controls.jpg",
+      "bytes": 20013614,
+      "sha256": "11fb7090b6c83196d635ec3479a3acb408996db87b4e9870cb9cee5bf8fb359d"
+    }
+  ]
+}

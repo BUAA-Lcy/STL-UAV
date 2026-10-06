@@ -1,0 +1,97 @@
+{
+  "status": "COMPLETE",
+  "provider": "Google Earth Pro",
+  "service_url": "https://earth.google.com/",
+  "zoom": 20,
+  "cache": "/home/lcy/Workplace/GTA-UAV/Game4Loc/work_dir/new_real_demo/google_earth_export/rectified_z20",
+  "downloaded_at_utc": "2026-09-26T16:19:37.960004+00:00",
+  "imagery_acquisition_date": "2024-09-12",
+  "attribution": "Google Earth / Image (c) 2026 Airbus",
+  "required_tiles": 78,
+  "valid_tiles": 78,
+  "failed_tiles": [],
+  "tile_grid_ground_m_per_pixel": 0.1151427698805805,
+  "selection_note": "Google Earth image export, georeferenced using artificial KML controls; z20 is a rectification grid, not a native-resolution claim.",
+  "clean_export": "/home/lcy/Workplace/GTA-UAV/Game4Loc/work_dir/new_real_demo/google_earth_export/clean.jpg",
+  "control_export": "/home/lcy/Workplace/GTA-UAV/Game4Loc/work_dir/new_real_demo/google_earth_export/controls.jpg",
+  "export_sha256": "7aab54e9992ae9e5f399129f6bb6f878ed6b3a8684ba158fb99ab431337366e9",
+  "export_resolution": [
+    8192,
+    6133
+  ],
+  "unchanged_background_difference_p60": 0.0,
+  "control_pixels": [
+    [
+      1930.589338192077,
+      1412.1048548254378
+    ],
+    [
+      4030.5468814296632,
+      1412.10334489448
+    ],
+    [
+      6130.4803339408545,
+      1412.0904227173849
+    ],
+    [
+      1898.3967186965933,
+      3155.4342030306484
+    ],
+    [
+      4029.551908831909,
+      3155.4418233618235
+    ],
+    [
+      6160.9408172583035,
+      3155.439390480539
+    ],
+    [
+      1865.0090334737308,
+      4951.423797384172
+    ],
+    [
+      4028.558389113238,
+      4951.4546108314435
+    ],
+    [
+      6192.287468879668,
+      4951.451894882434
+    ]
+  ],
+  "image_to_local_world": [
+    [
+      0.9257952235426656,
+      0.017154133219192416,
+      -1811.553838775718
+    ],
+    [
+      3.2257777860873246e-06,
+      0.9405468087095943,
+      -1328.1569457822209
+    ],
+    [
+      2.8500487384361897e-09,
+      8.674791602945463e-06,
+      1.0
+    ]
+  ],
+  "world_origin": [
+    220499925.14822486,
+    102075979.26737355
+  ],
+  "control_errors_m": [
+    1.865234208048819e-06,
+    0.0026235261427812032,
+    1.9696995244350737e-05,
+    0.01587977801509605,
+    0.012315750864760475,
+    0.011118545448174217,
+    2.8037235328855994e-06,
+    0.008041669040791805,
+    3.078495802723252e-05
+  ],
+  "independent_control_max_error_m": 0.01587977801509605,
+  "source_frame_first": 9151,
+  "source_frame_last": 10948,
+  "note": "Calibration checks export georeferencing only; UAV GPS/camera footprint remains approximate."
+}

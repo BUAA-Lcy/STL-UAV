@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NewRealDemo · GPS 同步演示</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,"Segoe UI","Microsoft YaHei",sans-serif;background:#101419;color:#e9edf1}*{box-sizing:border-box}body{margin:0;padding:28px 32px 36px}main{max-width:1500px;margin:auto}header{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:20px}h1{font-size:25px;font-weight:600;letter-spacing:.03em;margin:0 0 8px}p{color:#99a6b3;font-size:14px;line-height:1.65;margin:0}.badge{color:#b8e894;border:1px solid #43533d;background:#1b271b;border-radius:24px;padding:8px 14px;font-size:13px;white-space:nowrap}video{width:100%;display:block;aspect-ratio:12/5;background:#070a0d;border:1px solid #29323b;border-radius:10px}.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:17px 0}button,select,input{background:#1b232c;border:1px solid #37434f;color:#e9edf1;border-radius:6px;padding:10px 14px;font:inherit;font-size:14px}button{cursor:pointer}button:hover{background:#2c3946}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #b8e894;outline-offset:3px}.controls input[type=range]{flex:1;min-width:160px;accent-color:#b8e894;padding:0}.controls output{font-variant-numeric:tabular-nums;min-width:105px;color:#b8c5cf}.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #2b343e;margin-top:20px;padding-top:20px;gap:20px}.stat small{display:block;color:#8697a7;font-size:12px;margin-bottom:9px}.stat strong{font-family:Consolas,monospace;font-size:17px;font-weight:400}.note{margin-top:25px;font-size:12px;max-width:1050px}.links{display:flex;gap:22px;margin-top:14px}a{color:#b8e894;text-decoration:none;font-size:13px}a:hover{text-decoration:underline}#error{color:#ffa58b;margin:12px 0}kbd{background:#24303a;border-radius:4px;padding:2px 5px}footer{margin-top:28px;border-top:1px solid #2b343e;padding-top:15px;color:#758594;font-size:12px}@media(max-width:750px){body{padding:18px 12px}header{align-items:flex-start}.badge{font-size:11px}.stats{grid-template-columns:repeat(2,1fr)}h1{font-size:20px}}
+</style>
+<main>
+<header><div><h1>NewRealDemo</h1><p id="subtitle">最后 30 秒 · 左侧卫星图 / 右侧航拍画面</p></div><span class="badge">GPS 辅助演示</span></header>
+<video id="video" src="new_real_demo.mp4" poster="poster.jpg" playsinline preload="metadata" aria-label="左侧卫星、右侧航拍同步演示"></video>
+<div id="error" role="alert" hidden></div>
+<div class="controls"><button id="play" type="button">播放</button><button id="prev" type="button" aria-label="上一帧">← 上一帧</button><button id="next" type="button" aria-label="下一帧">下一帧 →</button><input id="seek" type="range" min="0" max="1" step="1" value="0" aria-label="逐帧进度"><output id="elapsed">00:00 / 00:30</output><select id="speed" aria-label="播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select><button id="fullscreen" type="button">全屏</button></div>
+<div class="stats"><div class="stat"><small>原视频时间 / 帧编号（从 0 开始）</small><strong id="frame">—</strong></div><div class="stat"><small>GPS 纬度 / 经度</small><strong id="gps">—</strong></div><div class="stat"><small>相对起飞高度</small><strong id="height">—</strong></div><div class="stat"><small>云台朝向</small><strong id="yaw">—</strong></div></div>
+<p class="note">使用视频内嵌 GPS 与云台姿态同步卫星画面。卫星图按估算的地面视野适配方向与范围；影像拍摄时间、分辨率及 GPS 误差会造成地物差异。此版本是 GPS 辅助对应演示。<br>快捷键：<kbd>空格</kbd> 播放 / 暂停，<kbd>←</kbd> <kbd>→</kbd> 逐帧查看。已缓存的内容可离线播放。</p>
+<div class="links"><a href="new_real_demo.mp4" download>下载演示视频</a><a href="satellite_frames.mp4" download>下载逐帧卫星视频</a><a href="frames.csv" download>逐帧对应表</a><a href="manifest.json">数据说明</a></div>
+<footer id="attribution">卫星影像来源载入中</footer>
+</main>
+<script src="frames.js"></script>
+<script>
+'use strict';
+const v=document.getElementById('video'),seek=document.getElementById('seek'),play=document.getElementById('play');
+const rows=window.DEMO_FRAMES||[],meta=window.DEMO_META||{},fps=meta.fps||60;
+let current=0;
+function clock(t){return String(Math.floor(t/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0')}
+function show(time){current=Math.min(rows.length-1,Math.max(0,Math.floor(time*fps+0.0001)));const r=rows[current];if(!r)return;seek.value=current;document.getElementById('elapsed').value=clock(time)+' / '+clock(Math.ceil(meta.duration_s));document.getElementById('frame').textContent=r.video_time_s.toFixed(3)+' s / '+r.frame_index;document.getElementById('gps').textContent=r.lat.toFixed(6)+' / '+r.lon.toFixed(6);document.getElementById('height').textContent=r.height_m.toFixed(1)+' m';document.getElementById('yaw').textContent=r.yaw_deg.toFixed(1)+'°'}
+function toggle(){if(v.paused)v.play().catch(e=>fail(e.message));else v.pause()}
+function jump(i){v.pause();current=Math.min(rows.length-1,Math.max(0,i));v.currentTime=(current+0.05)/fps;show(current/fps)}
+function fail(msg){const e=document.getElementById('error');e.textContent=msg;e.hidden=false}
+seek.max=Math.max(0,rows.length-1);play.onclick=toggle;document.getElementById('prev').onclick=()=>jump(current-1);document.getElementById('next').onclick=()=>jump(current+1);seek.oninput=()=>jump(Number(seek.value));document.getElementById('speed').onchange=e=>v.playbackRate=Number(e.target.value);document.getElementById('fullscreen').onclick=()=>v.requestFullscreen().catch(e=>fail(e.message));v.onplay=()=>play.textContent='暂停';v.onpause=()=>play.textContent='播放';v.onended=()=>{show(meta.duration_s);play.textContent='重播'};v.onseeked=()=>show(v.currentTime);v.onerror=()=>fail('视频尚未生成或无法读取。请先运行 build.py，或下载 MP4 后播放。');
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT','BUTTON'].includes(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();toggle()}if(e.code==='ArrowLeft'){e.preventDefault();jump(current-1)}if(e.code==='ArrowRight'){e.preventDefault();jump(current+1)}});
+if('requestVideoFrameCallback' in v){function tick(_,m){show(m.mediaTime);v.requestVideoFrameCallback(tick)}v.requestVideoFrameCallback(tick)}else v.ontimeupdate=()=>show(v.currentTime);
+document.getElementById("subtitle").textContent=Math.round(meta.duration_s)+" 秒片段 · 左侧卫星图 / 右侧航拍画面";
+document.getElementById('attribution').textContent='Satellite imagery © '+meta.satellite_attribution+' · '+(meta.satellite_acquisition_date||'拍摄日期未知');
+show(0);
+</script>
+</html>

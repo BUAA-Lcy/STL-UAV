@@ -1,0 +1,65 @@
+{
+  "rendered_frames": 1798,
+  "source_frames": 10949,
+  "clip_start_source_frame": 9151,
+  "fps": 59.94005994006135,
+  "duration_s": 29.996633333332625,
+  "missing_satellite_frames": 0,
+  "max_telemetry_time_error_ms": 0.8500000000140062,
+  "elapsed_s": 25.11753723700531,
+  "video": "/home/lcy/Workplace/GTA-UAV/Game4Loc/work_dir/new_real_demo/new_real_demo.mp4",
+  "status": "PASS",
+  "full_decode_frame_count": 1798,
+  "frame_mapping_rows_checked": 1798,
+  "visual_sample_checks": [
+    {
+      "output_frame": 0,
+      "source_frame": 9151,
+      "source_mae": 3.970715253005681,
+      "satellite_mae": 3.4696878991060025,
+      "satellite_only_mae": 3.300795872418197
+    },
+    {
+      "output_frame": 299,
+      "source_frame": 9450,
+      "source_mae": 4.022528157616594,
+      "satellite_mae": 3.1138793929184834,
+      "satellite_only_mae": 2.966794380587484
+    },
+    {
+      "output_frame": 599,
+      "source_frame": 9750,
+      "source_mae": 4.175345845994627,
+      "satellite_mae": 3.23877273527987,
+      "satellite_only_mae": 3.0583004414938126
+    },
+    {
+      "output_frame": 898,
+      "source_frame": 10049,
+      "source_mae": 4.150343231162196,
+      "satellite_mae": 3.0386905744924473,
+      "satellite_only_mae": 2.8298218886246533
+    },
+    {
+      "output_frame": 1198,
+      "source_frame": 10349,
+      "source_mae": 4.218596550623156,
+      "satellite_mae": 3.132529341172326,
+      "satellite_only_mae": 2.905315541462985
+    },
+    {
+      "output_frame": 1497,
+      "source_frame": 10648,
+      "source_mae": 4.19333864557185,
+      "satellite_mae": 3.2541747864094774,
+      "satellite_only_mae": 2.8587233562337606
+    },
+    {
+      "output_frame": 1797,
+      "source_frame": 10948,
+      "source_mae": 4.667810311798124,
+      "satellite_mae": 3.0956959858193507,
+      "satellite_only_mae": 2.9214187805522527
+    }
+  ]
+}
