@@ -1,3 +1,7 @@
+同步备注（2026-10-11）：本文件位于 `feature/purification-network` 分支。
+当前分支状态和其他分支成果入口见 [BranchStatus.md](BranchStatus.md)。
+以下保留原有阶段记录；历史“当前分支 / 未提交”描述应以此次同步记录及 Git 状态为准。
+
 # GTA-UAV Cloud Deployment Guide
 
 This project contains the implementation of the UAV-to-Satellite visual localization with Pose Attention Gating. The code is ready for single-machine, multi-GPU (e.g., 2x5090) cloud container deployment.
