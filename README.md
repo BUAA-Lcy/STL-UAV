@@ -1,3 +1,15 @@
+## 分支状态与成果入口（2026-10-11）
+
+当前分支：`RealDataDemo`。历史真实录像演示：飞行日志 GPS 选图、DKM / SP+LG 匹配及可视化。
+
+完整分支导航、实现快照及当前结论见 [BranchStatus.md](BranchStatus.md)。
+当前真实录像 Demo 的最快复现见
+[NewRealDemo README](https://github.com/BUAA-Lcy/STL-UAV/blob/NewRealDemo/README.md)，
+正式精定位研究见
+[codex/vop-experiment 成果记录](https://github.com/BUAA-Lcy/STL-UAV/blob/codex/vop-experiment/Process.md)。
+
+---
+
 <!-- PROJECT LOGO -->
 <p align="center">
 
